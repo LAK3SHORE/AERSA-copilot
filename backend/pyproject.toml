@@ -1,0 +1,43 @@
+[project]
+name = "aersa-copilot-backend"
+version = "0.0.1"
+description = "TALOS Analytical Audit Copilot — backend (FastAPI + analytical engine + Ollama-backed LLM agent)."
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+authors = [{ name = "AERSA × Tec de Monterrey · MA3001B" }]
+
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "python-dotenv>=1.0",
+  "sqlalchemy>=2.0",
+  "pymysql>=1.1",
+  "pandas>=2.2",
+  "numpy>=1.26",
+  "scipy>=1.14",
+  "scikit-learn>=1.5",
+  "ollama>=0.4",
+  "mcp>=1.1",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "sse-starlette>=2.1",
+  "cachetools>=5.5",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0",
+  "pytest-asyncio>=0.23",
+  "ruff>=0.6",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
