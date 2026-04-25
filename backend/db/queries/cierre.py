@@ -106,3 +106,59 @@ def fetch_top_categoria_faltante(idempresa: int, periodo: str) -> dict:
 
 def fetch_lines(idempresa: int, periodo: str) -> pd.DataFrame:
     return pd.read_sql(_LINES_SQL, engine, params={"idempresa": idempresa, "periodo": periodo})
+
+
+# ─── Shrinkage breakdown by category / subcategory ────────────────────
+# Used by the MCP `get_category_shrinkage` tool (CLAUDE.md §7.2 tool 4).
+# When idcategoria is NULL → aggregate by top-level categoria.
+# When idcategoria is provided → drill into subcategorias under that parent.
+_CATEGORY_SHRINKAGE_TOP_SQL = text("""
+SELECT
+    COALESCE(p.idcategoria, 0)                       AS idcategoria,
+    COALESCE(c1.categoria_nombre, 'Sin categoría')   AS categoria,
+    '—'                                              AS subcategoria,
+    SUM(ABS(f.dif_importe))                          AS total_merma_mxn,
+    COUNT(DISTINCT f.idproducto)                     AS num_productos
+FROM inventario_full f
+JOIN producto p        ON f.idproducto  = p.idproducto
+LEFT JOIN categoria c1 ON p.idcategoria = c1.idcategoria
+WHERE f.idempresa = :idempresa
+  AND f.periodo   = :periodo
+  AND f.diferencia < 0
+GROUP BY p.idcategoria, c1.categoria_nombre
+ORDER BY total_merma_mxn DESC
+""")
+
+
+_CATEGORY_SHRINKAGE_DRILL_SQL = text("""
+SELECT
+    COALESCE(p.idsubcategoria, 0)                    AS idsubcategoria,
+    COALESCE(c1.categoria_nombre, 'Sin categoría')   AS categoria,
+    COALESCE(c2.categoria_nombre, 'Sin subcategoría') AS subcategoria,
+    SUM(ABS(f.dif_importe))                          AS total_merma_mxn,
+    COUNT(DISTINCT f.idproducto)                     AS num_productos
+FROM inventario_full f
+JOIN producto p        ON f.idproducto     = p.idproducto
+LEFT JOIN categoria c1 ON p.idcategoria    = c1.idcategoria
+LEFT JOIN categoria c2 ON p.idsubcategoria = c2.idcategoria
+WHERE f.idempresa    = :idempresa
+  AND f.periodo      = :periodo
+  AND f.diferencia   < 0
+  AND p.idcategoria  = :idcategoria
+GROUP BY p.idsubcategoria, c1.categoria_nombre, c2.categoria_nombre
+ORDER BY total_merma_mxn DESC
+""")
+
+
+def fetch_category_shrinkage(
+    idempresa: int,
+    periodo: str,
+    idcategoria: int | None = None,
+) -> pd.DataFrame:
+    params: dict = {"idempresa": idempresa, "periodo": periodo}
+    if idcategoria is None:
+        sql = _CATEGORY_SHRINKAGE_TOP_SQL
+    else:
+        sql = _CATEGORY_SHRINKAGE_DRILL_SQL
+        params["idcategoria"] = idcategoria
+    return pd.read_sql(sql, engine, params=params)
