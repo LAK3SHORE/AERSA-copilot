@@ -6,12 +6,22 @@
 
 -- ─── inventariomesdetalle_clean ───────────────────────────────────────
 -- Base filtered view. ALWAYS use this, never raw inventariomesdetalle.
--- Filters: known corrupt row + outlier thresholds + non-negative stock.
+-- Filters:
+--   1. Known corrupt row (CLAUDE.md §3.4).
+--   2. Outlier thresholds on stock_fisico / stock_teorico / stock_inicial
+--      (catches the 999,999,999 sentinel placeholders found in §3.4).
+--   3. ABS(diferencia) < 1e6 — no real shrinkage moves a million units;
+--      higher values are sentinel-derived computed columns.
+--   4. importe_fisico < 1e8 — a single line can't represent more than $100M.
+--   5. Non-negative physical count.
 CREATE OR REPLACE VIEW inventariomesdetalle_clean AS
 SELECT *
 FROM inventariomesdetalle
-WHERE idinventariomesdetalle <> 90806848                  -- known corrupt row
+WHERE idinventariomesdetalle <> 90806848
   AND inventariomesdetalle_stockfisico  < 1e7
+  AND inventariomesdetalle_stockteorico < 1e7
+  AND inventariomesdetalle_stockinicial < 1e7
+  AND ABS(inventariomesdetalle_diferencia) < 1e6
   AND inventariomesdetalle_importefisico < 1e8
   AND inventariomesdetalle_stockfisico  >= 0;
 
