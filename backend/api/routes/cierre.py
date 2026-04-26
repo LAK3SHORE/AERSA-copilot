@@ -1,4 +1,4 @@
-"""GET /api/cierre/{idempresa}/{periodo} — full CierreReport (CLAUDE.md §9.3).
+"""GET /api/cierre/{idempresa}/{periodo} — full CierreReport (CLAUDE.md 9.3).
 
 Triggers the analytical engine through the TTL-cached accessor in
 `mcp_server.cache`. First call for a given (empresa, periodo) takes ~5s;

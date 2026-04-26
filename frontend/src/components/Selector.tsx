@@ -47,10 +47,10 @@ export function Selector({ idempresa, periodo, onPick, loading }: Props) {
 
   return (
     <section className="relative">
-      <div className="space-y-5 px-7 py-6 border-b hairline">
+      <div className="space-y-3.5 px-7 py-4 border-b hairline">
         <div className="flex items-center justify-between">
           <span className="label-eyebrow">Sesión de Auditoría</span>
-          <span className="font-mono text-[10px] tracking-widish text-ink-500">§ 01</span>
+          <span className="font-mono text-[10px] tracking-widish text-ink-4"> 01</span>
         </div>
 
         <SelectField label="Empresa">
@@ -58,10 +58,10 @@ export function Selector({ idempresa, periodo, onPick, loading }: Props) {
             value={draftEmpresa ?? ""}
             disabled={loading}
             onChange={(e) => setDraftEmpresa(Number(e.target.value))}
-            className="w-full appearance-none bg-transparent border-b hairline-strong pb-2 pt-1 text-lg font-display tracking-tight text-ink-50 outline-none focus:border-amber-500 disabled:opacity-50"
+            className="w-full appearance-none bg-transparent border-b hairline-strong pb-1.5 pt-0.5 text-[15px] font-sans font-medium tracking-tight text-ink outline-none focus:border-accent disabled:opacity-50"
           >
             {companies.map((c) => (
-              <option key={c.idempresa} value={c.idempresa} className="bg-ink-900 text-ink-50">
+              <option key={c.idempresa} value={c.idempresa} className="bg-cream text-ink">
                 {c.nombre} — {fmtInt(c.num_inventarios)} inv
               </option>
             ))}
@@ -73,10 +73,10 @@ export function Selector({ idempresa, periodo, onPick, loading }: Props) {
             value={draftPeriodo ?? ""}
             disabled={loading || periods.length === 0}
             onChange={(e) => setDraftPeriodo(e.target.value)}
-            className="w-full appearance-none bg-transparent border-b hairline-strong pb-2 pt-1 text-lg font-display tracking-tight text-ink-50 outline-none focus:border-amber-500 disabled:opacity-50"
+            className="w-full appearance-none bg-transparent border-b hairline-strong pb-1.5 pt-0.5 text-[15px] font-sans font-medium tracking-tight text-ink outline-none focus:border-accent disabled:opacity-50"
           >
             {periods.map((p) => (
-              <option key={p} value={p} className="bg-ink-900 text-ink-50">
+              <option key={p} value={p} className="bg-cream text-ink">
                 {fmtPeriodo(p)} · {p}
               </option>
             ))}
@@ -86,14 +86,14 @@ export function Selector({ idempresa, periodo, onPick, loading }: Props) {
         <button
           disabled={!canLoad}
           onClick={() => canLoad && onPick(draftEmpresa!, draftPeriodo!)}
-          className="group relative w-full overflow-hidden border hairline-strong bg-ink-800 px-5 py-3 text-left transition-all hover:border-amber-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="group relative w-full overflow-hidden border hairline-strong bg-cream-2 px-5 py-2.5 text-left transition-all hover:border-accent hover:bg-cream-3 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <span className="absolute inset-y-0 left-0 w-[3px] bg-amber-500 transition-all group-hover:w-2" />
+          <span className="absolute inset-y-0 left-0 w-[3px] bg-accent transition-all group-hover:w-2" />
           <div className="flex items-center justify-between pl-2">
-            <span className="font-mono text-[11px] uppercase tracking-wide2 text-ink-200">
+            <span className="font-mono text-[11px] uppercase tracking-wide2 text-ink-2">
               {loading ? "Generando análisis…" : "Cargar Cierre"}
             </span>
-            <span className="font-mono text-[11px] text-amber-400">
+            <span className="font-mono text-[11px] text-accent">
               {loading ? "··· " : "→"}
             </span>
           </div>
@@ -108,7 +108,7 @@ export function Selector({ idempresa, periodo, onPick, loading }: Props) {
 function SelectField({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <span className="label-eyebrow block mb-1">{label}</span>
+      <span className="label-eyebrow block mb-0.5">{label}</span>
       {children}
     </div>
   );

@@ -1,8 +1,8 @@
 """FastMCP server for the AERSA Copilot.
 
-Registers the four v0 tools (CLAUDE.md §7) against a single `FastMCP`
+Registers the four v0 tools (CLAUDE.md 7) against a single `FastMCP`
 instance. For v0 we import and call tools in-process from the FastAPI
-agent (CLAUDE.md §7.1) — the stdio transport is available via `mcp.run()`
+agent (CLAUDE.md 7.1) — the stdio transport is available via `mcp.run()`
 for external MCP clients (Claude Desktop, Inspector) when desired.
 
 Run standalone over stdio:
@@ -27,7 +27,7 @@ mcp = FastMCP("aersa-copilot")
 
 
 def _log_call(name: str, args: dict, elapsed_ms: float, result: dict) -> None:
-    """CLAUDE.md §15: log every tool call with timestamp, name, execution time."""
+    """CLAUDE.md 15: log every tool call with timestamp, name, execution time."""
     status = "error" if isinstance(result, dict) and "error" in result else "ok"
     log.info("mcp.tool name=%s status=%s elapsed_ms=%.1f args=%s", name, status, elapsed_ms, args)
 

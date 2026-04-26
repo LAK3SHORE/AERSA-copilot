@@ -1,4 +1,4 @@
-"""Pydantic request/response models for the FastAPI surface (CLAUDE.md §9).
+"""Pydantic request/response models for the FastAPI surface (CLAUDE.md 9).
 
 Field shapes mirror the engine dataclasses (`KPISummary`, `AnomalyRecord`,
 `CierreReport` in `engine/report.py`). Keep them in sync if the engine adds

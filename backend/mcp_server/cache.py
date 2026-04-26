@@ -1,9 +1,9 @@
 """TTL-cached accessor for CierreReport.
 
-The full report is expensive to build (~5s on empresa 956, §14). A single
+The full report is expensive to build (~5s on empresa 956, 14). A single
 chat turn often triggers multiple tool calls against the same (empresa,
 periodo), so we memoize per (idempresa, periodo, top_n) for
-`settings.cierre_cache_ttl_seconds` (default 600s, CLAUDE.md §11).
+`settings.cierre_cache_ttl_seconds` (default 600s, CLAUDE.md 11).
 """
 from __future__ import annotations
 

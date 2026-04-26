@@ -1,6 +1,6 @@
 """Convert FastMCP tool descriptors → Ollama function-calling schemas.
 
-CLAUDE.md §8.3 says to derive these programmatically from the MCP server
+CLAUDE.md 8.3 says to derive these programmatically from the MCP server
 so the LLM and the MCP layer can never drift. FastMCP already produces
 JSON Schema for each tool's input; we wrap it in OpenAI-style envelopes
 that Ollama accepts.

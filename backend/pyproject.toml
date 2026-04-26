@@ -4,7 +4,7 @@ version = "0.0.1"
 description = "TALOS Analytical Audit Copilot — backend (FastAPI + analytical engine + Ollama-backed LLM agent)."
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
-authors = [{ name = "AERSA × Tec de Monterrey · MA3001B" }]
+authors = [{ name = "AERSA · Tec de Monterrey" }]
 
 dependencies = [
   "fastapi>=0.115",

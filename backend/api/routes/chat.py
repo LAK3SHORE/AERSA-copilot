@@ -1,4 +1,4 @@
-"""POST /api/chat — SSE-streaming tool-calling agent (CLAUDE.md §9.4).
+"""POST /api/chat — SSE-streaming tool-calling agent (CLAUDE.md 9.4).
 
 Wraps `llm.agent.run_agent` (the async generator that drives Gemma's
 tool-calling loop) with `sse_starlette.EventSourceResponse`. Each event
@@ -21,7 +21,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from api.models import ChatRequest
 from llm.agent import run_agent
-from mcp_server.cache import get_or_build_cierre_report
+from mcp_server.cache import _CACHE as _CIERRE_CACHE
 
 log = logging.getLogger("api.chat")
 
@@ -29,13 +29,18 @@ router = APIRouter(prefix="/api", tags=["chat"])
 
 
 def _peek_num_almacenes(idempresa: int, periodo: str) -> int | None:
-    """Read num_almacenes from the cached report. Never block on a fresh build —
-    the agent will get the value via tool calls if the cache is cold."""
-    try:
-        report = get_or_build_cierre_report(idempresa, periodo)
-    except Exception:  # noqa: BLE001 — purely a context hint; ignore failures
-        return None
-    return report.kpis.num_almacenes if report.kpis.num_lineas > 0 else None
+    """Peek num_almacenes from the cache *only* — never trigger a build.
+
+    A cold cache means the FE hasn't loaded the cierre yet (or the TTL
+    expired). The agent will get accurate counts via its tool calls;
+    we just leave the system-prompt's "Almacenes activos" as "—" rather
+    than blocking the chat turn for ~5s on a fresh report build.
+    """
+    for top_n in (20, 10, 50):
+        report = _CIERRE_CACHE.get((idempresa, periodo, top_n))
+        if report is not None and report.kpis.num_lineas > 0:
+            return report.kpis.num_almacenes
+    return None
 
 
 async def _sse_stream(

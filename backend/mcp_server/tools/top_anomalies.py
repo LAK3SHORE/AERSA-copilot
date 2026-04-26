@@ -1,7 +1,7 @@
-"""`get_top_anomalies` MCP tool (CLAUDE.md §7.2 tool 2).
+"""`get_top_anomalies` MCP tool (CLAUDE.md 7.2 tool 2).
 
 Returns the top-N anomalous inventory lines ranked by composite priority
-score (severity + financial impact + recurrence, §6.3).
+score (severity + financial impact + recurrence, 6.3).
 """
 from __future__ import annotations
 

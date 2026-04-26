@@ -1,4 +1,4 @@
-"""FastAPI app entry point (CLAUDE.md §9 + §5).
+"""FastAPI app entry point (CLAUDE.md 9 + 5).
 
 Wires the four route modules behind a single ASGI app, enables CORS for
 the Vite dev server, and exposes a `/api/health` endpoint for the

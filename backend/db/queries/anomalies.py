@@ -3,7 +3,7 @@
 For each (idproducto, idalmacen, periodo) over the lookback window we
 aggregate diferencia and stock_teorico so the engine can derive a per-period
 merma_rate observation. The engine then computes mean / std / quartiles in
-pandas (CLAUDE.md §6.2).
+pandas (CLAUDE.md 6.2).
 """
 from __future__ import annotations
 

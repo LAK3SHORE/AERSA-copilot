@@ -1,4 +1,4 @@
-// Mirrors backend Pydantic models (CLAUDE.md §10.4 originally specified
+// Mirrors backend Pydantic models (CLAUDE.md 10.4 originally specified
 // camelCase, but snake_case avoids a translation layer — the API ships
 // snake_case from FastAPI and we consume it as-is.
 

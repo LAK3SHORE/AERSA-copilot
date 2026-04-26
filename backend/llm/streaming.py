@@ -1,4 +1,4 @@
-"""SSE event constructors for the chat stream (CLAUDE.md §9.4).
+"""SSE event constructors for the chat stream (CLAUDE.md 9.4).
 
 The agent yields these as plain dicts. The FastAPI route hands them to
 `sse-starlette` (which serializes them as SSE `data:` frames). The test

@@ -26,12 +26,12 @@ export function ChatPanel({ messages, pending, ready, onSend, empresa, periodo }
     <section className="flex flex-col h-full min-h-0">
       <div className="px-7 py-5 border-b hairline flex items-baseline justify-between">
         <div className="flex items-baseline gap-3">
-          <span className="font-display text-xl italic">Conversación</span>
-          <span className="font-mono text-[10px] tracking-wide2 text-ink-400">
+          <span className="font-sans font-semibold text-lg text-ink">Conversación</span>
+          <span className="font-mono text-[10px] tracking-wide2 text-ink-4">
             COPILOTO · gemma4:e4b · local
           </span>
         </div>
-        <span className="font-mono text-[10px] tracking-widish text-ink-500">§ 04</span>
+        <span className="font-mono text-[10px] tracking-widish text-ink-4"> 04</span>
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-7 py-6 space-y-6">
@@ -60,12 +60,13 @@ function EmptyState({
   return (
     <div className="max-w-2xl space-y-4 py-6 animate-fade-in">
       <p className="label-eyebrow">Bienvenida</p>
-      <p className="font-display text-3xl italic leading-tight text-ink-50">
+      <p className="font-sans font-medium text-2xl leading-snug text-ink">
         {ready ? (
           <>
-            Cierre cargado para <span className="not-italic font-mono text-amber-400 text-2xl">{empresa}</span>{" "}
-            <span className="text-ink-300">·</span>{" "}
-            <span className="not-italic font-mono text-amber-400 text-2xl">{periodo}</span>.
+            Cierre cargado para{" "}
+            <span className="font-mono text-accent text-xl">{empresa}</span>{" "}
+            <span className="text-ink-3">·</span>{" "}
+            <span className="font-mono text-accent text-xl">{periodo}</span>.
           </>
         ) : (
           <>Selecciona una empresa y un periodo para comenzar.</>
@@ -74,7 +75,7 @@ function EmptyState({
       {ready && (
         <div className="space-y-2 pt-4">
           <p className="label-eyebrow">Sugerencias</p>
-          <ul className="space-y-1.5 font-mono text-[12px] text-ink-300">
+          <ul className="space-y-1.5 font-mono text-[12px] text-ink-2">
             <li>· ¿Qué debo revisar primero en este Cierre?</li>
             <li>· ¿Cómo viene Bebidas comparado con meses anteriores?</li>
             <li>· Explícame el hallazgo más crítico.</li>

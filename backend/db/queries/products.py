@@ -1,7 +1,7 @@
 """Product / category / period lookup queries.
 
 Lightweight helpers used by `/api/companies`, `/api/periods/{empresa}`, and
-the MCP `search_products` tool (deferred per CLAUDE.md §13.2 but the SQL is
+the MCP `search_products` tool (deferred per CLAUDE.md 13.2 but the SQL is
 trivial so we ship it now).
 """
 from __future__ import annotations

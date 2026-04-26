@@ -1,6 +1,6 @@
 // Spanish-locale formatters tuned for the audit context. Numbers use
 // Spanish thousands/decimals (1.234,56). Currency strings always carry an
-// explicit "MXN" suffix per CLAUDE.md §15.
+// explicit "MXN" suffix per CLAUDE.md 15.
 
 const NUM = new Intl.NumberFormat("es-MX", {
   minimumFractionDigits: 0,

@@ -1,15 +1,15 @@
-"""Tool-calling agent loop against Ollama `gemma4:e4b` (CLAUDE.md §8.2).
+"""Tool-calling agent loop against Ollama `gemma4:e4b` (CLAUDE.md 8.2).
 
 Streams an SSE event dict for tool invocations and for the final
 synthesized response. The MCP tools are imported in-process (no
-subprocess needed for v0 — see CLAUDE.md §7.1).
+subprocess needed for v0 — see CLAUDE.md 7.1).
 
 Token policy (locked 2026-04-25 after demo bug-hunt):
 
 Gemma streams pre-tool-call deliberation as plain `message.content`
 (typically English chain-of-thought, hundreds of tokens). Forwarding that
 to the user blew up perceived latency to >90s and left the chat panel
-showing English thinking instead of the answer (CLAUDE.md §14 polish
+showing English thinking instead of the answer (CLAUDE.md 14 polish
 note). So we BUFFER content per round and only flush it as `token` events
 on the *synthesis* round (the round with no tool calls). Tool-call rounds
 have their content dropped — the user only sees `tool_call` /
@@ -186,7 +186,7 @@ def _chunk_for_streaming(text: str, size: int = 8) -> list[str]:
 
 # ─── Synthesis sanitiser ───────────────────────────────────────────────
 # Gemma3/4 occasionally emit two kinds of garbage at the start of a
-# synthesis turn (CLAUDE.md §14 Session-4 polish notes):
+# synthesis turn (CLAUDE.md 14 Session-4 polish notes):
 #   1. A "fake tool call" — a fenced code block with JSON like
 #      ```json { "tool_name": "...", "parameters": {...} } ```
 #      which the model wrote instead of issuing a structured tool_call.

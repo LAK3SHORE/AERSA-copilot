@@ -1,4 +1,4 @@
-"""`get_cierre_summary` MCP tool (CLAUDE.md §7.2 tool 1).
+"""`get_cierre_summary` MCP tool (CLAUDE.md 7.2 tool 1).
 
 Returns the top-level KPI summary for a Cierre de Semana. The LLM uses
 this for "overview" questions: totals, num almacenes, top problem category.

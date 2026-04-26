@@ -1,6 +1,6 @@
 """Smoke test for the Ollama tool-calling agent (Session 4).
 
-Drives `llm.agent.run_agent` with a single demo question (CLAUDE.md §13.3)
+Drives `llm.agent.run_agent` with a single demo question (CLAUDE.md 13.3)
 against the live MCP tools and Gemma. Prints the SSE event stream so a
 human can verify:
 

@@ -4,7 +4,7 @@ Run via:
     uv run python -m scripts.bootstrap_views
 
 The script is idempotent: views are CREATE OR REPLACE. It also asserts the
-Session-1 invariants from CLAUDE.md §14:
+Session-1 invariants from CLAUDE.md 14:
   - inventariomesdetalle_clean has < 11,772,750 rows (something filtered)
   - corrupt row 90806848 is excluded
   - inventario_full only contains finalizado/aplicado/terminado statuses
@@ -19,7 +19,7 @@ from sqlalchemy import text
 from db.connection import engine
 
 VIEWS_SQL = Path(__file__).resolve().parent.parent / "db" / "views.sql"
-RAW_DETAIL_ROWS = 11_772_750  # documented in CLAUDE.md §3.2
+RAW_DETAIL_ROWS = 11_772_750  # documented in CLAUDE.md 3.2
 CORRUPT_ROW_ID = 90_806_848
 
 

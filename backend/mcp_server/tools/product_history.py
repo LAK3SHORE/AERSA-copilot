@@ -1,4 +1,4 @@
-"""`get_product_history` MCP tool (CLAUDE.md §7.2 tool 3).
+"""`get_product_history` MCP tool (CLAUDE.md 7.2 tool 3).
 
 Returns the per-period merma_rate, financial impact, and z-score for a
 specific (producto, almacen) pair over the last N months. The z-score

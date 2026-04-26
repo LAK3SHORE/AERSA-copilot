@@ -1,4 +1,4 @@
-"""CierreReport assembler (CLAUDE.md §6.4).
+"""CierreReport assembler (CLAUDE.md 6.4).
 
 The CierreReport is the single source of truth for a (empresa, periodo)
 session. It bundles the KPI summary and the top-N anomalies into one
@@ -162,9 +162,11 @@ def build_cierre_report(
 
     n_no_baseline = int((~annotated["has_baseline"]).sum())
     if n_no_baseline:
+        from config import settings as _s
+
         warnings.append(
             f"{n_no_baseline:,} líneas sin historia suficiente "
-            f"(<{baseline_stats.empty and 0 or 3} periodos)"
+            f"(<{_s.anomaly_min_history_periods} periodos)"
         )
 
     scored = compute_priority_scores(annotated)

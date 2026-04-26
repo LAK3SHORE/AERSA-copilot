@@ -1,4 +1,4 @@
-"""Composite priority scoring (CLAUDE.md §6.3).
+"""Composite priority scoring (CLAUDE.md 6.3).
 
 Each annotated line gets a 0–100 priority score combining:
   - severity (z-score, capped at 1.0 at z=5)
@@ -13,7 +13,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-# Top-level idcategoria → multiplier (CLAUDE.md §6.3).
+# Top-level idcategoria → multiplier (CLAUDE.md 6.3).
 # 1=Alimentos, 2=Bebidas, 3=Gastos. Anything else falls back to 1.0.
 CATEGORY_WEIGHTS: dict[int, float] = {1: 1.0, 2: 1.2, 3: 0.8}
 

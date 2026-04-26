@@ -1,4 +1,4 @@
-"""`get_category_shrinkage` MCP tool (CLAUDE.md §7.2 tool 4).
+"""`get_category_shrinkage` MCP tool (CLAUDE.md 7.2 tool 4).
 
 Breaks down faltantes (negative diferencia × costo) by top-level
 categoria, or by subcategoria when drilling into a specific idcategoria.

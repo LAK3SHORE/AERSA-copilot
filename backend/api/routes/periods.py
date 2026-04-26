@@ -1,4 +1,4 @@
-"""GET /api/periods/{idempresa} — available cierre periods (CLAUDE.md §9.2).
+"""GET /api/periods/{idempresa} — available cierre periods (CLAUDE.md 9.2).
 
 Returns YYYY-MM strings descending. Source is the `inventario_full` view,
 which already filters to estatus IN ('finalizado','aplicado','terminado').

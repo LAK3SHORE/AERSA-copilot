@@ -1,6 +1,6 @@
 """Historical trend queries for a single (producto, almacen) pair.
 
-Feeds the MCP `get_product_history` tool (CLAUDE.md §7.2 tool 3). The
+Feeds the MCP `get_product_history` tool (CLAUDE.md 7.2 tool 3). The
 engine's baseline module pulls company-wide history; this one is scoped
 to a single product × warehouse over the last N periods.
 """

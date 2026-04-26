@@ -1,4 +1,4 @@
-"""GET /api/companies — top companies with finalised inventories (CLAUDE.md §9.1).
+"""GET /api/companies — top companies with finalised inventories (CLAUDE.md 9.1).
 
 Ranks by raw inventory count so the demo always lands on a populated empresa
 (956 leads with ~10.8K inventarios). The display name is synthesized as

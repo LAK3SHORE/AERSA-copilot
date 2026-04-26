@@ -1,4 +1,4 @@
-"""System prompt for the TALOS Copiloto Analítico (CLAUDE.md §8.1).
+"""System prompt for the TALOS Copiloto Analítico (CLAUDE.md 8.1).
 
 The prompt is the most load-bearing piece of the LLM layer — it's what
 makes Gemma behave like a domain auditor instead of a generic chatbot.
@@ -75,7 +75,11 @@ Almacenes activos en este Cierre: {num_almacenes}
 - Usa el símbolo $ MXN para valores monetarios.
 - Para merma, reporta siempre el porcentaje Y el valor absoluto en MXN.
 - Si un hallazgo es CRÍTICO, dilo explícitamente al inicio de tu respuesta.
-- No uses markdown excesivo. Respuestas concisas y accionables.
+- Puedes usar markdown ligero cuando ayude a la lectura: **negritas** para
+  resaltar montos o productos clave, listas con viñetas (-) para enumerar
+  hallazgos, y tablas markdown cuando compares varias categorías o
+  almacenes. Mantén las respuestas concisas y accionables — no uses
+  encabezados grandes (#, ##) ni bloques de código innecesarios.
 - Responde siempre en español.
 """
 

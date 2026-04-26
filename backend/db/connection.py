@@ -1,6 +1,6 @@
 """SQLAlchemy engine + session factory for the read-only TALOS connection.
 
-Per CLAUDE.md §15: all DB work is read-only. The engine is configured with
+Per CLAUDE.md 15: all DB work is read-only. The engine is configured with
 `pool_pre_ping=True` so stale connections are detected after MariaDB restarts.
 Use `session_scope()` for short-lived queries and `engine` for pandas reads.
 """

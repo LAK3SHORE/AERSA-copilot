@@ -1,6 +1,6 @@
 """SQL queries for Cierre de Semana data: KPI summary and line-level pulls.
 
-All queries read from the `inventario_full` view (CLAUDE.md §6.1), which is
+All queries read from the `inventario_full` view (CLAUDE.md 6.1), which is
 already filtered for outliers and finalized inventories. Joins enrich with
 producto, categoria, almacen, and unidadmedida for display.
 """
@@ -109,7 +109,7 @@ def fetch_lines(idempresa: int, periodo: str) -> pd.DataFrame:
 
 
 # ─── Shrinkage breakdown by category / subcategory ────────────────────
-# Used by the MCP `get_category_shrinkage` tool (CLAUDE.md §7.2 tool 4).
+# Used by the MCP `get_category_shrinkage` tool (CLAUDE.md 7.2 tool 4).
 # When idcategoria is NULL → aggregate by top-level categoria.
 # When idcategoria is provided → drill into subcategorias under that parent.
 _CATEGORY_SHRINKAGE_TOP_SQL = text("""

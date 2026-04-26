@@ -1,6 +1,6 @@
 """Anomaly detection: per-(producto, almacen) baseline + per-line z-scores.
 
-Pipeline (CLAUDE.md §6.2):
+Pipeline (CLAUDE.md 6.2):
   1. Pull historical observations per (producto, almacen, periodo) from the
      last `lookback_months` periods (excluding the current one).
   2. Aggregate per (producto, almacen): mean, std, q25, q75, IQR, n_periods.
@@ -54,7 +54,7 @@ def _recurrence_count(
     last_n: int = 4,
 ) -> pd.DataFrame:
     """Per (producto, almacen), count how many of the last `last_n` periods
-    had merma_rate > mean + 2*std (a proxy for z > 2 from §6.3).
+    had merma_rate > mean + 2*std (a proxy for z > 2 from 6.3).
 
     Uses the full-window mean/std as the threshold; that's an approximation
     of the leave-one-out z-score but acceptable for v0.

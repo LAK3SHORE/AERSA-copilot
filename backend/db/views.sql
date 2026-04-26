@@ -1,15 +1,15 @@
 -- =====================================================================
 -- AERSA Copilot · TALOS · SQL view definitions
 -- Idempotent: every view is `CREATE OR REPLACE`.
--- These views encode the data-quality contract from CLAUDE.md §3.4.
+-- These views encode the data-quality contract from CLAUDE.md 3.4.
 -- =====================================================================
 
 -- ─── inventariomesdetalle_clean ───────────────────────────────────────
 -- Base filtered view. ALWAYS use this, never raw inventariomesdetalle.
 -- Filters:
---   1. Known corrupt row (CLAUDE.md §3.4).
+--   1. Known corrupt row (CLAUDE.md 3.4).
 --   2. Outlier thresholds on stock_fisico / stock_teorico / stock_inicial
---      (catches the 999,999,999 sentinel placeholders found in §3.4).
+--      (catches the 999,999,999 sentinel placeholders found in 3.4).
 --   3. ABS(diferencia) < 1e6 — no real shrinkage moves a million units;
 --      higher values are sentinel-derived computed columns.
 --   4. importe_fisico < 1e8 — a single line can't represent more than $100M.
@@ -28,7 +28,7 @@ WHERE idinventariomesdetalle <> 90806848
 
 -- ─── inventario_full ──────────────────────────────────────────────────
 -- Joins clean detail with inventory header for everyday analytical reads.
--- Only includes inventories in a "useful" status (per CLAUDE.md §6.1).
+-- Only includes inventories in a "useful" status (per CLAUDE.md 6.1).
 -- All amounts are MXN; periodo is the YYYY-MM anchor of the Cierre.
 CREATE OR REPLACE VIEW inventario_full AS
 SELECT

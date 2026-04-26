@@ -1,48 +1,43 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
-  darkMode: "class",
   theme: {
     extend: {
       colors: {
-        // Editorial Audit Terminal palette — warm dark, bone fg, amber accent.
+        // Light editorial palette — cream ground, dark teal text, green accents.
+        cream: {
+          DEFAULT: "#F8F3E1", // page ground
+          2: "#F1EAD0",       // raised surface (input, hover)
+          3: "#E8DFC0",       // selected / active surface
+        },
         ink: {
-          50: "#f6f4ee",   // bone — primary text on dark
-          100: "#e9e5db",
-          200: "#cdc8bb",
-          300: "#a8a293",
-          400: "#7c7568",
-          500: "#5a5447",
-          600: "#3d3830",
-          700: "#27241e",
-          800: "#161410",
-          900: "#0d0c0a",   // base ground
-          950: "#080706",
+          DEFAULT: "#091413", // primary text
+          2: "#1d2e2b",       // secondary text
+          3: "#3d524e",       // tertiary / labels
+          4: "#6b7c78",       // muted / captions
+          5: "#94a3a0",       // very muted / dividers
         },
-        amber: {
-          // sharp single-accent for primary actions / current selection.
-          400: "#f0b25c",
-          500: "#dc8b1f",
-          600: "#b86d10",
-          700: "#92560d",
+        accent: {
+          DEFAULT: "#285A48", // deep — primary buttons, important borders
+          2: "#408A71",       // mid — links, hover, secondary buttons
+          3: "#B0E4CC",       // mint — subtle borders, success, highlights
         },
-        crit: "#e84545",      // CRÍTICO red
-        alto: "#f0904e",      // ALTO orange
-        medio: "#f0c14e",     // MEDIO yellow
-        bajo: "#9aa195",      // BAJO muted grey-green
+        crit: "#B23A3A",      // CRÍTICO — muted red on cream
+        alto: "#D87A2C",      // ALTO — burnt orange
+        medio: "#C49A2C",     // MEDIO — ochre
+        bajo: "#7A8A7E",      // BAJO — slate sage
       },
       fontFamily: {
-        display: ['"Instrument Serif"', "ui-serif", "Georgia", "serif"],
-        sans: ['"Geist"', "ui-sans-serif", "system-ui", "sans-serif"],
-        mono: ['"Geist Mono"', "ui-monospace", "Menlo", "monospace"],
+        sans: ['"IBM Plex Sans"', "ui-sans-serif", "system-ui", "sans-serif"],
+        mono: ['"IBM Plex Mono"', "ui-monospace", "Menlo", "monospace"],
       },
       letterSpacing: {
         widish: "0.04em",
         wide2: "0.08em",
       },
       boxShadow: {
-        edge: "inset 0 0 0 1px rgba(246,244,238,0.06)",
-        edgeStrong: "inset 0 0 0 1px rgba(246,244,238,0.12)",
+        edge: "inset 0 0 0 1px rgba(9,20,19,0.06)",
+        edgeStrong: "inset 0 0 0 1px rgba(9,20,19,0.12)",
       },
       animation: {
         "rise-in": "rise-in 0.5s cubic-bezier(0.2, 0.6, 0.2, 1) both",

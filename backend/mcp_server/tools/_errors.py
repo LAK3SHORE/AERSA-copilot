@@ -1,4 +1,4 @@
-"""Error envelope shared by all MCP tools (CLAUDE.md §7.3)."""
+"""Error envelope shared by all MCP tools (CLAUDE.md 7.3)."""
 from __future__ import annotations
 
 import logging

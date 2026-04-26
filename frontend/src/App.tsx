@@ -150,7 +150,7 @@ export default function App() {
 
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-[minmax(380px,40%)_1fr] min-h-0">
         {/* Left rail */}
-        <aside className="border-r hairline flex flex-col min-h-0 overflow-hidden">
+        <aside className="border-r hairline flex flex-col min-h-0 overflow-y-auto">
           <Selector
             idempresa={empresa}
             periodo={periodo}
@@ -167,7 +167,11 @@ export default function App() {
           )}
           {status === "ready" && report && (
             <>
-              <KPICards kpis={report.kpis} totalAnomalies={report.total_anomalies_found} />
+              <KPICards
+                kpis={report.kpis}
+                totalAnomalies={report.total_anomalies_found}
+                onAsk={sendMessage}
+              />
               <AnomalyList
                 anomalies={report.top_anomalies}
                 total={report.total_anomalies_found}
@@ -192,10 +196,10 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="border-t hairline px-7 py-2.5 flex items-center justify-between font-mono text-[10px] tracking-widish text-ink-500">
+      <footer className="border-t hairline px-7 py-2.5 flex items-center justify-between font-mono text-[10px] tracking-widish text-ink-4">
         <span>TALOS Copiloto v0.0.1 · prototype</span>
         <span>
-          datos read-only · MariaDB <span className="text-ink-400">talos_tecmty</span>
+          datos read-only · MariaDB <span className="text-ink-3">talos_tecmty</span>
         </span>
       </footer>
     </div>
@@ -206,19 +210,19 @@ function LoadingSkeleton() {
   return (
     <div className="px-7 py-8 space-y-3 animate-fade-in">
       <p className="label-eyebrow">Generando análisis</p>
-      <p className="font-display text-2xl italic text-ink-100 leading-tight">
+      <p className="font-sans font-medium text-xl text-ink leading-tight">
         Calculando z-scores, ranking impacto financiero, ensamblando reporte…
       </p>
       <div className="space-y-2 pt-2">
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className="h-12 border hairline bg-ink-800/40 animate-blink"
+            className="h-12 border hairline bg-cream-2 animate-blink"
             style={{ animationDelay: `${i * 0.15}s` }}
           />
         ))}
       </div>
-      <p className="font-mono text-[11px] text-ink-400 pt-2">
+      <p className="font-mono text-[11px] text-ink-4 pt-2">
         Primera carga del periodo: ~5–8s · cache TTL 600s
       </p>
     </div>
@@ -229,10 +233,10 @@ function IdleHint() {
   return (
     <div className="flex-1 flex items-center justify-center px-7 py-12">
       <div className="text-center max-w-xs space-y-3 animate-fade-in">
-        <p className="font-display italic text-xl text-ink-200 leading-tight">
+        <p className="font-sans font-medium text-lg text-ink-2 leading-snug">
           Cada Cierre cuenta una historia. Ayúdale al auditor a encontrarla.
         </p>
-        <p className="font-mono text-[10px] tracking-wide2 uppercase text-ink-500">
+        <p className="font-mono text-[10px] tracking-wide2 uppercase text-ink-4">
           Selecciona arriba para empezar
         </p>
       </div>
