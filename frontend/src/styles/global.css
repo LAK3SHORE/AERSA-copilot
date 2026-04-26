@@ -1,0 +1,84 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background:
+      radial-gradient(60% 60% at 18% 0%, rgba(220, 139, 31, 0.05), transparent 60%),
+      radial-gradient(45% 55% at 100% 100%, rgba(220, 139, 31, 0.03), transparent 60%),
+      #0d0c0a;
+    background-attachment: fixed;
+    font-feature-settings: "ss01", "cv11";
+  }
+
+  /* Subtle grain overlay — never use as a decoration of last resort, here
+     it gives the dark surface depth without screaming about it. */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.035;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)' opacity='0.65'/></svg>");
+  }
+
+  /* tabular numerics by default for monospace */
+  .font-mono {
+    font-feature-settings: "tnum", "zero";
+  }
+
+  ::selection {
+    background: rgba(240, 178, 92, 0.3);
+    color: #f6f4ee;
+  }
+
+  /* hairline scrollbars */
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgba(246, 244, 238, 0.08);
+    border-radius: 999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: rgba(246, 244, 238, 0.18);
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer components {
+  .hairline {
+    border-color: rgba(246, 244, 238, 0.08);
+  }
+  .hairline-strong {
+    border-color: rgba(246, 244, 238, 0.16);
+  }
+
+  .label-eyebrow {
+    @apply font-mono text-[10px] uppercase tracking-wide2 text-ink-300;
+  }
+
+  .num {
+    @apply font-mono tabular-nums;
+  }
+
+  .severity-bar {
+    @apply absolute inset-y-0 left-0 w-[3px];
+  }
+}
