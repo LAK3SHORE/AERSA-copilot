@@ -10,9 +10,11 @@ import logging
 import re
 import time
 
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
 from api.models import CierreReportOut
+from auth.dependencies import assert_empresa_access, get_current_user
+from auth.models import User
 from mcp_server.cache import get_or_build_cierre_report
 
 log = logging.getLogger("api.cierre")
@@ -27,7 +29,9 @@ def get_cierre(
     idempresa: int = Path(ge=1),
     periodo: str = Path(min_length=7, max_length=7),
     top_n: int = Query(default=20, ge=1, le=100),
+    user: User = Depends(get_current_user),
 ) -> CierreReportOut:
+    assert_empresa_access(user, idempresa)
     if not _PERIODO_RE.match(periodo):
         raise HTTPException(
             status_code=400,

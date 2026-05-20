@@ -16,10 +16,12 @@ import logging
 from collections.abc import AsyncIterator
 from typing import Any
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from sse_starlette.sse import EventSourceResponse
 
 from api.models import ChatRequest
+from auth.dependencies import assert_empresa_access, get_current_user
+from auth.models import User
 from llm.agent import run_agent
 from mcp_server.cache import _CACHE as _CIERRE_CACHE
 
@@ -81,5 +83,12 @@ async def _sse_stream(
 
 
 @router.post("/chat")
-async def chat(body: ChatRequest, request: Request) -> EventSourceResponse:
+async def chat(
+    body: ChatRequest,
+    request: Request,
+    user: User = Depends(get_current_user),
+) -> EventSourceResponse:
+    assert_empresa_access(user, body.idempresa)
+    request.state.user_id = user.id
+    request.state.username = user.username
     return EventSourceResponse(_sse_stream(request, body))

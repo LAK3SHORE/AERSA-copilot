@@ -2,6 +2,7 @@
 // the framing: read the response body as a stream, buffer until we hit
 // `\n\n` (one SSE event), and parse the `data:` line as JSON.
 
+import { authHeadersForStream, ApiError } from "./client";
 import type { ChatEvent, ChatHistoryMessage } from "../types";
 
 export interface ChatRequest {
@@ -25,7 +26,7 @@ export async function streamChat(
   try {
     res = await fetch("/api/chat", {
       method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+      headers: authHeadersForStream(),
       body: JSON.stringify(body),
       signal,
     });
@@ -36,7 +37,7 @@ export async function streamChat(
 
   if (!res.ok || !res.body) {
     const detail = await res.text().catch(() => res.statusText);
-    onError?.(new Error(`HTTP ${res.status}: ${detail}`));
+    onError?.(new ApiError(res.status, detail || res.statusText));
     return;
   }
 

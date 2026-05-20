@@ -11,6 +11,7 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       strictPort: false,
+      allowedHosts: ["neomi-semifurnished-thi.ngrok-free.dev"],
       proxy: {
         "/api": {
           target: apiBase,

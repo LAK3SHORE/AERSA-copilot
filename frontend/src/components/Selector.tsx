@@ -7,11 +7,12 @@ import { fmtInt, fmtPeriodo } from "../lib/format";
 interface Props {
   idempresa: number | null;
   periodo: string | null;
+  lockedEmpresa?: number | null;
   onPick: (idempresa: number, periodo: string) => void;
   loading: boolean;
 }
 
-export function Selector({ idempresa, periodo, onPick, loading }: Props) {
+export function Selector({ idempresa, periodo, lockedEmpresa, onPick, loading }: Props) {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [periods, setPeriods] = useState<string[]>([]);
   const [draftEmpresa, setDraftEmpresa] = useState<number | null>(idempresa);
@@ -22,11 +23,15 @@ export function Selector({ idempresa, periodo, onPick, loading }: Props) {
     fetchCompanies(8)
       .then((rows) => {
         setCompanies(rows);
-        if (!draftEmpresa && rows[0]) setDraftEmpresa(rows[0].idempresa);
+        if (lockedEmpresa != null) {
+          setDraftEmpresa(lockedEmpresa);
+        } else if (!draftEmpresa && rows[0]) {
+          setDraftEmpresa(rows[0].idempresa);
+        }
       })
       .catch((e) => setErr(`No se pudo cargar empresas: ${e.message}`));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [lockedEmpresa]);
 
   useEffect(() => {
     if (draftEmpresa == null) return;
@@ -53,20 +58,29 @@ export function Selector({ idempresa, periodo, onPick, loading }: Props) {
           <span className="font-mono text-[10px] tracking-widish text-ink-4"> 01</span>
         </div>
 
-        <SelectField label="Empresa">
-          <select
-            value={draftEmpresa ?? ""}
-            disabled={loading}
-            onChange={(e) => setDraftEmpresa(Number(e.target.value))}
-            className="w-full appearance-none bg-transparent border-b hairline-strong pb-1.5 pt-0.5 text-[15px] font-sans font-medium tracking-tight text-ink outline-none focus:border-accent disabled:opacity-50"
-          >
-            {companies.map((c) => (
-              <option key={c.idempresa} value={c.idempresa} className="bg-cream text-ink">
-                {c.nombre} — {fmtInt(c.num_inventarios)} inv
-              </option>
-            ))}
-          </select>
-        </SelectField>
+        {lockedEmpresa != null ? (
+          <div>
+            <span className="label-eyebrow block mb-0.5">Empresa</span>
+            <p className="font-sans font-medium text-[15px] text-ink tracking-tight">
+              Empresa {lockedEmpresa}
+            </p>
+          </div>
+        ) : (
+          <SelectField label="Empresa">
+            <select
+              value={draftEmpresa ?? ""}
+              disabled={loading}
+              onChange={(e) => setDraftEmpresa(Number(e.target.value))}
+              className="w-full appearance-none bg-transparent border-b hairline-strong pb-1.5 pt-0.5 text-[15px] font-sans font-medium tracking-tight text-ink outline-none focus:border-accent disabled:opacity-50"
+            >
+              {companies.map((c) => (
+                <option key={c.idempresa} value={c.idempresa} className="bg-cream text-ink">
+                  {c.nombre} — {fmtInt(c.num_inventarios)} inv
+                </option>
+              ))}
+            </select>
+          </SelectField>
+        )}
 
         <SelectField label="Periodo">
           <select

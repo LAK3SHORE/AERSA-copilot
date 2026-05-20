@@ -49,6 +49,14 @@ class Settings(BaseSettings):
     outlier_max_stock_fisico: float = Field(default=1e7)
     outlier_max_importe_fisico: float = Field(default=1e8)
 
+    # Auth + analytics (Phase 2 — Session 9)
+    jwt_secret_key: str = Field(
+        default="dev-only-change-me-run-python-c-import-secrets-print-secrets-token-hex-32",
+    )
+    jwt_algorithm: str = Field(default="HS256")
+    jwt_expire_minutes: int = Field(default=480)
+    analytics_db_path: str = Field(default="analytics.db")
+
     @property
     def db_url(self) -> str:
         pwd = f":{self.db_password}" if self.db_password else ""
@@ -56,6 +64,13 @@ class Settings(BaseSettings):
             f"mysql+pymysql://{self.db_user}{pwd}"
             f"@{self.db_host}:{self.db_port}/{self.db_name}?charset=utf8mb4"
         )
+
+    @property
+    def analytics_db_url(self) -> str:
+        path = Path(self.analytics_db_path)
+        if not path.is_absolute():
+            path = Path(__file__).resolve().parent / path
+        return f"sqlite:///{path}"
 
 
 @lru_cache(maxsize=1)

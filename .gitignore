@@ -11,6 +11,9 @@ venv/
 # uv
 .python-version
 
+# Analytics (Phase 2 auth — Session 9)
+backend/analytics.db
+
 # Env
 .env
 .env.local
@@ -31,3 +34,5 @@ Thumbs.db
 .vscode/
 *.swp
 CLAUDE.md
+MCP_METRICS_TRACKING.md
+

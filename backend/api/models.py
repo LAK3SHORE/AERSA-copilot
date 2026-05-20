@@ -7,9 +7,12 @@ response_model.
 """
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
+
+if TYPE_CHECKING:
+    from auth.models import User
 
 
 class CompanyOut(BaseModel):
@@ -88,6 +91,27 @@ class HealthOut(BaseModel):
     error: str | None = None
 
 
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    role: Literal["auditor", "corporativo"]
+    idempresa: int | None = None
+
+    @classmethod
+    def from_user(cls, user: User) -> UserOut:
+        return cls(
+            id=user.id,
+            username=user.username,
+            role=user.role.value,
+            idempresa=user.idempresa,
+        )
+
+
 __all__ = [
     "CompanyOut",
     "KPISummaryOut",
@@ -96,4 +120,6 @@ __all__ = [
     "ChatHistoryMessage",
     "ChatRequest",
     "HealthOut",
+    "TokenOut",
+    "UserOut",
 ]

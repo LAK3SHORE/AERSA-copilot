@@ -23,6 +23,7 @@ import json
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any
 
@@ -30,21 +31,48 @@ DEFAULT_BASE_URL = "http://127.0.0.1:8000"
 DEFAULT_EMPRESA = 956
 DEFAULT_PERIODO = "2025-12"
 DEFAULT_QUESTION = "¿Cuál es el hallazgo más crítico?"
+# Session 9 — use corporativo for cross-empresa smoke, or auditor scoped to 956
+DEFAULT_AUTH_USER = "admin"
+DEFAULT_AUTH_PASS = "aersa2026"
 
 
-def _get_json(url: str, timeout: float = 60.0) -> Any:
-    with urllib.request.urlopen(url, timeout=timeout) as r:  # noqa: S310 (local URL)
+def _login(base: str, username: str, password: str) -> str:
+    body = urllib.parse.urlencode({"username": username, "password": password}).encode()
+    req = urllib.request.Request(
+        f"{base}/api/auth/login",
+        data=body,
+        method="POST",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+    )
+    with urllib.request.urlopen(req, timeout=30) as r:  # noqa: S310
+        return str(json.loads(r.read().decode())["access_token"])
+
+
+def _auth_headers(token: str, extra: dict[str, str] | None = None) -> dict[str, str]:
+    h = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
+    if extra:
+        h.update(extra)
+    return h
+
+
+def _get_json(url: str, token: str | None = None, timeout: float = 60.0) -> Any:
+    headers = _auth_headers(token) if token else {"Accept": "application/json"}
+    req = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310 (local URL)
         return json.loads(r.read().decode("utf-8"))
 
 
-def _post_sse(url: str, body: dict, timeout: float = 180.0) -> list[dict]:
+def _post_sse(url: str, body: dict, token: str, timeout: float = 180.0) -> list[dict]:
     """Stream SSE response, return collected events (one dict per `data:` line)."""
     data = json.dumps(body).encode("utf-8")
     req = urllib.request.Request(
         url,
         data=data,
         method="POST",
-        headers={"Content-Type": "application/json", "Accept": "text/event-stream"},
+        headers=_auth_headers(
+            token,
+            {"Content-Type": "application/json", "Accept": "text/event-stream"},
+        ),
     )
     events: list[dict] = []
     with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310
@@ -74,6 +102,9 @@ def main() -> int:
 
     print(f"[api] base={base} empresa={empresa} periodo={periodo}")
 
+    token = _login(base, DEFAULT_AUTH_USER, DEFAULT_AUTH_PASS)
+    print(f"[api] auth as {DEFAULT_AUTH_USER}")
+
     # 1. /api/health
     _hr("GET /api/health")
     t0 = time.perf_counter()
@@ -88,7 +119,7 @@ def main() -> int:
     # 2. /api/companies
     _hr("GET /api/companies")
     t0 = time.perf_counter()
-    companies = _get_json(f"{base}/api/companies?limit=5")
+    companies = _get_json(f"{base}/api/companies?limit=5", token=token)
     print(f"  count={len(companies)} elapsed_ms={(time.perf_counter() - t0) * 1000:.1f}")
     for c in companies[:3]:
         print(f"    · {c['idempresa']:>5}  {c['nombre']}  ({c['num_inventarios']} inv)")
@@ -96,7 +127,7 @@ def main() -> int:
     # 3. /api/periods/{empresa}
     _hr(f"GET /api/periods/{empresa}")
     t0 = time.perf_counter()
-    periods = _get_json(f"{base}/api/periods/{empresa}")
+    periods = _get_json(f"{base}/api/periods/{empresa}", token=token)
     print(f"  count={len(periods)} elapsed_ms={(time.perf_counter() - t0) * 1000:.1f}")
     print(f"  first 5 = {periods[:5]}")
 
@@ -104,7 +135,7 @@ def main() -> int:
     _hr(f"GET /api/cierre/{empresa}/{periodo}")
     t0 = time.perf_counter()
     try:
-        report = _get_json(f"{base}/api/cierre/{empresa}/{periodo}", timeout=60)
+        report = _get_json(f"{base}/api/cierre/{empresa}/{periodo}", token=token, timeout=60)
     except urllib.error.HTTPError as exc:  # noqa: PERF203
         print(f"  HTTP {exc.code}: {exc.read().decode('utf-8', errors='replace')}")
         return 1
@@ -128,6 +159,7 @@ def main() -> int:
     events = _post_sse(
         f"{base}/api/chat",
         {"idempresa": empresa, "periodo": periodo, "message": question, "history": []},
+        token=token,
     )
     elapsed_ms = (time.perf_counter() - t0) * 1000
     n_token = sum(1 for e in events if e.get("type") == "token")

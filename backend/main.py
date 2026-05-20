@@ -15,6 +15,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from api.models import HealthOut
+from api.routes.analytics import router as analytics_router
+from api.routes.auth import router as auth_router
 from api.routes.chat import router as chat_router
 from api.routes.cierre import router as cierre_router
 from api.routes.companies import router as companies_router
@@ -37,10 +39,12 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[settings.cors_origin],
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
 
+app.include_router(auth_router)
+app.include_router(analytics_router)
 app.include_router(companies_router)
 app.include_router(periods_router)
 app.include_router(cierre_router)
