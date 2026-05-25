@@ -1,27 +1,42 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAuth } from "../auth/AuthContext";
+import { fetchBrief } from "../api/brief";
 import { fetchCierre } from "../api/cierre";
+import { updateFindingStatus } from "../api/findings";
+import { logSessionEvent, endSession } from "../api/sessions";
 import { streamChat } from "../api/chat";
 import type {
   AnomalyRecord,
+  AuditBrief,
+  AuditBriefAction,
   ChatHistoryMessage,
   ChatMessage,
   CierreReport,
+  FindingStatus,
   ToolCallIndicator,
 } from "../types";
+import {
+  contextFromAnomaly,
+  contextFromBriefAction,
+  displayPromptForFinding,
+  type FindingContextPayload,
+} from "../lib/findingPrompt";
 import { Header } from "../components/Header";
 import { Selector } from "../components/Selector";
 import { KPICards } from "../components/KPICards";
 import { AnomalyList } from "../components/AnomalyList";
+import { GuidedBriefing } from "../components/GuidedBriefing";
 import { ChatPanel } from "../components/ChatPanel";
 
 type Status = "idle" | "loading" | "ready" | "error";
 
 interface Props {
   onOpenAnalytics?: () => void;
+  /** When true, hide outer header (parent provides nav) — full auditor UX including briefing. */
+  embedded?: boolean;
 }
 
-export function AuditorPage({ onOpenAnalytics }: Props) {
+export function AuditorPage({ onOpenAnalytics, embedded }: Props) {
   const { user, logout } = useAuth();
   const lockedEmpresa = user?.role === "auditor" ? user.idempresa : null;
 
@@ -31,13 +46,29 @@ export function AuditorPage({ onOpenAnalytics }: Props) {
   const [report, setReport] = useState<CierreReport | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedAnomaly, setSelectedAnomaly] = useState<number | null>(null);
+  const [sessionId, setSessionId] = useState<number | null>(null);
+  const [findingStatuses, setFindingStatuses] = useState<Record<number, string>>({});
+  const [brief, setBrief] = useState<AuditBrief | null>(null);
+  const [briefLoading, setBriefLoading] = useState(false);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatPending, setChatPending] = useState(false);
+  const sessionStartRef = useRef<number>(Date.now());
 
   useEffect(() => {
     if (lockedEmpresa != null) setEmpresa(lockedEmpresa);
   }, [lockedEmpresa]);
+
+  useEffect(() => {
+    const sid = sessionId;
+    if (sid == null) return;
+    const onUnload = () => {
+      const dur = Math.round((Date.now() - sessionStartRef.current) / 1000);
+      void endSession(sid, dur).catch(() => {});
+    };
+    window.addEventListener("beforeunload", onUnload);
+    return () => window.removeEventListener("beforeunload", onUnload);
+  }, [sessionId]);
 
   const loadCierre = useCallback(async (id: number, per: string) => {
     setEmpresa(id);
@@ -45,13 +76,26 @@ export function AuditorPage({ onOpenAnalytics }: Props) {
     setStatus("loading");
     setLoadError(null);
     setReport(null);
+    setBrief(null);
     setMessages([]);
     setSelectedAnomaly(null);
+    setSessionId(null);
+    sessionStartRef.current = Date.now();
 
     try {
       const data = await fetchCierre(id, per);
       setReport(data);
+      setSessionId(data.audit_session_id ?? null);
+      setFindingStatuses(data.finding_statuses ?? {});
       setStatus("ready");
+
+      setBriefLoading(true);
+      try {
+        const b = await fetchBrief(id, per, data.audit_session_id ?? undefined);
+        setBrief(b);
+      } finally {
+        setBriefLoading(false);
+      }
     } catch (e) {
       setStatus("error");
       setLoadError((e as Error).message);
@@ -59,7 +103,10 @@ export function AuditorPage({ onOpenAnalytics }: Props) {
   }, []);
 
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (
+      text: string,
+      opts?: { suggested?: boolean; findingContext?: FindingContextPayload },
+    ) => {
       if (!empresa || !periodo) return;
 
       const history: ChatHistoryMessage[] = messages
@@ -93,7 +140,15 @@ export function AuditorPage({ onOpenAnalytics }: Props) {
 
       try {
         await streamChat(
-          { idempresa: empresa, periodo, message: text, history },
+          {
+            idempresa: empresa,
+            periodo,
+            message: text,
+            history,
+            session_id: sessionId,
+            suggested: opts?.suggested ?? false,
+            finding_context: opts?.findingContext ?? null,
+          },
           {
             onEvent: (evt) => {
               switch (evt.type) {
@@ -139,29 +194,79 @@ export function AuditorPage({ onOpenAnalytics }: Props) {
         setChatPending(false);
       }
     },
-    [empresa, periodo, messages],
+    [empresa, periodo, messages, sessionId],
   );
 
   const onAnomalyPick = useCallback(
     (a: AnomalyRecord) => {
       setSelectedAnomaly(a.idinventariomesdetalle);
-      const prompt = `Explícame el hallazgo de "${a.producto_nombre}" en el almacén "${a.almacen_nombre}". ¿Por qué es anómalo, qué impacto tiene y qué debería revisar?`;
-      sendMessage(prompt);
+      if (sessionId != null) {
+        void logSessionEvent(sessionId, "anomaly_click", {
+          idinventariomesdetalle: a.idinventariomesdetalle,
+          severity_label: a.severity_label,
+        });
+      }
+      sendMessage(displayPromptForFinding(a.producto_nombre, a.almacen_nombre), {
+        findingContext: contextFromAnomaly(a),
+      });
+    },
+    [sendMessage, sessionId],
+  );
+
+  const onBriefAction = useCallback(
+    (action: AuditBriefAction) => {
+      setSelectedAnomaly(action.idinventariomesdetalle);
+      sendMessage(
+        displayPromptForFinding(action.producto_nombre, action.almacen_nombre),
+        { suggested: true, findingContext: contextFromBriefAction(action) },
+      );
     },
     [sendMessage],
   );
 
+  const onStatusChange = useCallback(
+    async (id: number, status: FindingStatus) => {
+      if (!empresa) return;
+      setFindingStatuses((prev) => ({ ...prev, [id]: status }));
+      try {
+        await updateFindingStatus(id, status, {
+          sessionId: sessionId ?? undefined,
+          idempresa: empresa,
+        });
+      } catch {
+        setFindingStatuses((prev) => {
+          const next = { ...prev };
+          delete next[id];
+          return next;
+        });
+      }
+    },
+    [empresa, sessionId],
+  );
+
+  const handleLogout = useCallback(() => {
+    if (sessionId != null) {
+      const dur = Math.round((Date.now() - sessionStartRef.current) / 1000);
+      void endSession(sessionId, dur);
+    }
+    logout();
+  }, [logout, sessionId]);
+
+  const showFindingStatus = user?.role === "auditor";
+
   return (
-    <div className="relative z-10 flex flex-col h-screen">
-      <Header
-        idempresa={empresa}
-        periodo={periodo}
-        status={status}
-        username={user?.username}
-        role={user?.role}
-        onOpenAnalytics={user?.role === "corporativo" ? onOpenAnalytics : undefined}
-        onLogout={logout}
-      />
+    <div className={`relative z-10 flex flex-col ${embedded ? "h-full" : "h-screen"}`}>
+      {!embedded && (
+        <Header
+          idempresa={empresa}
+          periodo={periodo}
+          status={status}
+          username={user?.username}
+          role={user?.role}
+          onOpenAnalytics={user?.role === "corporativo" ? onOpenAnalytics : undefined}
+          onLogout={handleLogout}
+        />
+      )}
 
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-[minmax(380px,40%)_1fr] min-h-0">
         <aside className="border-r hairline flex flex-col min-h-0 overflow-y-auto">
@@ -182,6 +287,11 @@ export function AuditorPage({ onOpenAnalytics }: Props) {
           )}
           {status === "ready" && report && (
             <>
+              <GuidedBriefing
+                brief={brief}
+                loading={briefLoading}
+                onAction={onBriefAction}
+              />
               <KPICards
                 kpis={report.kpis}
                 totalAnomalies={report.total_anomalies_found}
@@ -192,6 +302,8 @@ export function AuditorPage({ onOpenAnalytics }: Props) {
                 total={report.total_anomalies_found}
                 onPick={onAnomalyPick}
                 selectedId={selectedAnomaly}
+                findingStatuses={findingStatuses}
+                onStatusChange={showFindingStatus ? onStatusChange : undefined}
               />
             </>
           )}
@@ -211,7 +323,12 @@ export function AuditorPage({ onOpenAnalytics }: Props) {
       </main>
 
       <footer className="border-t hairline px-7 py-2.5 flex items-center justify-between font-mono text-[10px] tracking-widish text-ink-4">
-        <span>TALOS Copiloto v0.1 · Phase 2 auth</span>
+        <span>
+          TALOS Copiloto v0.2 · Sessions 10–13
+          {sessionId != null && (
+            <span className="text-ink-3 ml-2">sesión #{sessionId}</span>
+          )}
+        </span>
         <span>
           datos read-only · MariaDB <span className="text-ink-3">talos_tecmty</span>
         </span>

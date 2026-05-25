@@ -44,6 +44,15 @@ export async function getJSON<T>(path: string): Promise<T> {
   return handleResponse<T>(r);
 }
 
+export async function patchJSON<T>(path: string, body: unknown): Promise<T> {
+  const r = await fetch(`${BASE}${path}`, {
+    method: "PATCH",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(body),
+  });
+  return handleResponse<T>(r);
+}
+
 export async function postJSON<T>(path: string, body: unknown): Promise<T> {
   const r = await fetch(`${BASE}${path}`, {
     method: "POST",

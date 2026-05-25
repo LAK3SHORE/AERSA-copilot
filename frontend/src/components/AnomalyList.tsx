@@ -1,4 +1,4 @@
-import type { AnomalyRecord, SeverityLabel } from "../types";
+import type { AnomalyRecord, FindingStatus, SeverityLabel } from "../types";
 import { fmtMxn, fmtPct, fmtZ } from "../lib/format";
 
 const SEVERITY_BAR: Record<SeverityLabel, string> = {
@@ -15,14 +15,29 @@ const SEVERITY_TEXT: Record<SeverityLabel, string> = {
   BAJO: "text-bajo",
 };
 
+const STATUS_STYLE: Record<FindingStatus, string> = {
+  pendiente: "text-ink-3 border-ink-4",
+  revisado: "text-accent border-accent",
+  escalado: "text-crit border-crit",
+};
+
 interface Props {
   anomalies: AnomalyRecord[];
   total: number;
   onPick: (a: AnomalyRecord) => void;
   selectedId: number | null;
+  findingStatuses?: Record<number, string>;
+  onStatusChange?: (id: number, status: FindingStatus) => void;
 }
 
-export function AnomalyList({ anomalies, total, onPick, selectedId }: Props) {
+export function AnomalyList({
+  anomalies,
+  total,
+  onPick,
+  selectedId,
+  findingStatuses = {},
+  onStatusChange,
+}: Props) {
   return (
     <section className="flex flex-col">
       <div className="px-7 py-3 border-b hairline flex items-baseline justify-between bg-cream-2 sticky top-0 z-10">
@@ -38,60 +53,86 @@ export function AnomalyList({ anomalies, total, onPick, selectedId }: Props) {
       <ol>
         {anomalies.map((a, i) => {
           const selected = a.idinventariomesdetalle === selectedId;
+          const status = (findingStatuses[a.idinventariomesdetalle] ??
+            "pendiente") as FindingStatus;
           return (
             <li
               key={a.idinventariomesdetalle}
-              className={`relative group cursor-pointer border-b hairline transition-colors ${
+              className={`relative group border-b hairline transition-colors ${
                 selected ? "bg-accent-3/40" : "hover:bg-cream-2"
               }`}
-              onClick={() => onPick(a)}
             >
               <span className={`severity-bar ${SEVERITY_BAR[a.severity_label]}`} />
 
               <div className="pl-5 pr-7 py-3 flex items-start gap-4">
-                <span className="num text-[10px] text-ink-4 mt-1 w-6 shrink-0 text-right">
-                  {String(i + 1).padStart(2, "0")}
-                </span>
+                <button
+                  type="button"
+                  className="flex-1 min-w-0 text-left cursor-pointer"
+                  onClick={() => onPick(a)}
+                >
+                  <span className="num text-[10px] text-ink-4 mt-1 w-6 shrink-0 text-right inline-block">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline gap-3 flex-wrap">
-                    <span
-                      className={`font-mono text-[10px] uppercase tracking-wide2 ${
-                        SEVERITY_TEXT[a.severity_label]
-                      }`}
-                    >
-                      {a.severity_label}
-                    </span>
-                    <span className="num text-[10px] text-ink-3">
-                      score {a.priority_score.toFixed(1)}
-                    </span>
-                    <span className="num text-[10px] text-ink-3">{fmtZ(a.z_score)}</span>
-                    {a.recurrence_count > 0 && (
-                      <span className="font-mono text-[10px] text-ink-3">
-                        recurrencia {a.recurrence_count}/4
+                  <div className="inline-block flex-1 min-w-0 align-top ml-2">
+                    <div className="flex items-baseline gap-3 flex-wrap">
+                      <span
+                        className={`font-mono text-[10px] uppercase tracking-wide2 ${
+                          SEVERITY_TEXT[a.severity_label]
+                        }`}
+                      >
+                        {a.severity_label}
                       </span>
-                    )}
+                      <span className="num text-[10px] text-ink-3">
+                        score {a.priority_score.toFixed(1)}
+                      </span>
+                      <span className="num text-[10px] text-ink-3">{fmtZ(a.z_score)}</span>
+                      {a.recurrence_count > 0 && (
+                        <span className="font-mono text-[10px] text-ink-3">
+                          recurrencia {a.recurrence_count}/4
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="mt-1 font-sans font-medium text-base leading-snug text-ink truncate">
+                      {a.producto_nombre}
+                    </h3>
+
+                    <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-ink-3 truncate">
+                      <span className="truncate">{a.almacen_nombre}</span>
+                      <span className="text-ink-5">·</span>
+                      <span className="truncate">{a.categoria_nombre}</span>
+                    </div>
                   </div>
 
-                  <h3 className="mt-1 font-sans font-medium text-base leading-snug text-ink truncate">
-                    {a.producto_nombre}
-                  </h3>
+                  <div className="float-right text-right shrink-0 ml-4">
+                    <div className="num text-base text-ink tabular-nums">
+                      {fmtMxn(a.financial_impact_mxn)}
+                    </div>
+                    <div className="num text-[11px] text-ink-3 mt-0.5">
+                      merma {fmtPct(a.merma_rate)}
+                    </div>
+                  </div>
+                </button>
 
-                  <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-ink-3 truncate">
-                    <span className="truncate">{a.almacen_nombre}</span>
-                    <span className="text-ink-5">·</span>
-                    <span className="truncate">{a.categoria_nombre}</span>
-                  </div>
-                </div>
-
-                <div className="text-right shrink-0">
-                  <div className="num text-base text-ink tabular-nums">
-                    {fmtMxn(a.financial_impact_mxn)}
-                  </div>
-                  <div className="num text-[11px] text-ink-3 mt-0.5">
-                    merma {fmtPct(a.merma_rate)}
-                  </div>
-                </div>
+                {onStatusChange && (
+                  <select
+                    value={status}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={(e) =>
+                      onStatusChange(
+                        a.idinventariomesdetalle,
+                        e.target.value as FindingStatus,
+                      )
+                    }
+                    className={`shrink-0 font-mono text-[10px] uppercase tracking-wide2 border px-1.5 py-1 bg-cream ${STATUS_STYLE[status]}`}
+                    aria-label={`Estado de ${a.producto_nombre}`}
+                  >
+                    <option value="pendiente">pendiente</option>
+                    <option value="revisado">revisado</option>
+                    <option value="escalado">escalado</option>
+                  </select>
+                )}
               </div>
             </li>
           );

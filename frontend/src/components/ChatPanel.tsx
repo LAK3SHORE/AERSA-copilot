@@ -10,9 +10,18 @@ interface Props {
   onSend: (text: string) => void;
   empresa: number | null;
   periodo: string | null;
+  mode?: "cierre" | "corporativo";
 }
 
-export function ChatPanel({ messages, pending, ready, onSend, empresa, periodo }: Props) {
+export function ChatPanel({
+  messages,
+  pending,
+  ready,
+  onSend,
+  empresa,
+  periodo,
+  mode = "cierre",
+}: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -28,7 +37,7 @@ export function ChatPanel({ messages, pending, ready, onSend, empresa, periodo }
         <div className="flex items-baseline gap-3">
           <span className="font-sans font-semibold text-lg text-ink">Conversación</span>
           <span className="font-mono text-[10px] tracking-wide2 text-ink-4">
-            COPILOTO · gemma4:e4b · local
+            {mode === "corporativo" ? "OWNER · analytics" : "COPILOTO · gemma4:e4b · local"}
           </span>
         </div>
         <span className="font-mono text-[10px] tracking-widish text-ink-4"> 04</span>
@@ -36,7 +45,7 @@ export function ChatPanel({ messages, pending, ready, onSend, empresa, periodo }
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-7 py-6 space-y-6">
         {messages.length === 0 && (
-          <EmptyState empresa={empresa} periodo={periodo} ready={ready} />
+          <EmptyState empresa={empresa} periodo={periodo} ready={ready} mode={mode} />
         )}
         {messages.map((m, i) => (
           <MessageBubble key={i} msg={m} />
@@ -52,11 +61,33 @@ function EmptyState({
   empresa,
   periodo,
   ready,
+  mode,
 }: {
   empresa: number | null;
   periodo: string | null;
   ready: boolean;
+  mode: "cierre" | "corporativo";
 }) {
+  if (mode === "corporativo") {
+    return (
+      <div className="max-w-2xl space-y-4 py-6 animate-fade-in">
+        <p className="label-eyebrow">Copiloto corporativo</p>
+        <p className="font-sans font-medium text-2xl leading-snug text-ink">
+          {ready
+            ? "Haz clic en una tarjeta del panel o escribe una pregunta sobre adopción del copiloto."
+            : "Cargando métricas de uso…"}
+        </p>
+        {ready && (
+          <ul className="space-y-1.5 font-mono text-[12px] text-ink-2 pt-2">
+            <li>· ¿Qué empresa usa menos el copiloto?</li>
+            <li>· ¿La herramienta más usada es la adecuada para auditoría profunda?</li>
+            <li>· ¿Qué auditor necesita más capacitación?</li>
+          </ul>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-2xl space-y-4 py-6 animate-fade-in">
       <p className="label-eyebrow">Bienvenida</p>

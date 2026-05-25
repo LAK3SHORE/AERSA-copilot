@@ -1,24 +1,20 @@
-import { useState } from "react";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { LoginPage } from "./pages/LoginPage";
 import { AuditorPage } from "./pages/AuditorPage";
-import { AnalyticsPage } from "./pages/AnalyticsPage";
-
-type View = "copilot" | "analytics";
+import { CorporativoPage } from "./pages/CorporativoPage";
 
 function AppRoutes() {
-  const { token } = useAuth();
-  const [view, setView] = useState<View>("copilot");
+  const { token, user } = useAuth();
 
   if (!token) {
     return <LoginPage />;
   }
 
-  if (view === "analytics") {
-    return <AnalyticsPage onBack={() => setView("copilot")} />;
+  if (user?.role === "corporativo") {
+    return <CorporativoPage />;
   }
 
-  return <AuditorPage onOpenAnalytics={() => setView("analytics")} />;
+  return <AuditorPage />;
 }
 
 export default function App() {

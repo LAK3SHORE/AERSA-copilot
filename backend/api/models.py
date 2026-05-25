@@ -61,6 +61,60 @@ class AnomalyRecordOut(BaseModel):
     unidad_medida: str
 
 
+class ChatHistoryMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class FindingContextIn(BaseModel):
+    """When the auditor clicks a hallazgo, the UI sends IDs — agent must not ask for more."""
+
+    idinventariomesdetalle: int
+    idproducto: int
+    idalmacen: int
+    producto_nombre: str
+    almacen_nombre: str
+    severity_label: str | None = None
+
+
+class ChatRequest(BaseModel):
+    idempresa: int
+    periodo: str = Field(pattern=r"^\d{4}-\d{2}$")
+    message: str = Field(min_length=1, max_length=4000)
+    history: list[ChatHistoryMessage] = Field(default_factory=list)
+    session_id: int | None = None
+    suggested: bool = False
+    finding_context: FindingContextIn | None = None
+
+
+class CorporativoChatRequest(BaseModel):
+    """Owner analytics copilot — no Cierre context required."""
+
+    message: str = Field(min_length=1, max_length=4000)
+    history: list[ChatHistoryMessage] = Field(default_factory=list)
+    days: int = Field(default=30, ge=1, le=365)
+
+
+class AuditBriefActionOut(BaseModel):
+    rank: int
+    idinventariomesdetalle: int
+    producto_nombre: str
+    almacen_nombre: str
+    severity_label: str
+    title: str
+    reason: str
+    suggested_prompt: str
+
+
+class AuditBriefOut(BaseModel):
+    idempresa: int
+    periodo: str
+    headline: str
+    summary: str
+    action_count: int
+    actions: list[dict[str, Any]]
+
+
 class CierreReportOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -71,18 +125,8 @@ class CierreReportOut(BaseModel):
     top_anomalies: list[AnomalyRecordOut]
     total_anomalies_found: int
     data_quality_warnings: list[str] = Field(default_factory=list)
-
-
-class ChatHistoryMessage(BaseModel):
-    role: Literal["user", "assistant"]
-    content: str
-
-
-class ChatRequest(BaseModel):
-    idempresa: int
-    periodo: str = Field(pattern=r"^\d{4}-\d{2}$")
-    message: str = Field(min_length=1, max_length=4000)
-    history: list[ChatHistoryMessage] = Field(default_factory=list)
+    audit_session_id: int | None = None
+    finding_statuses: dict[int, str] = Field(default_factory=dict)
 
 
 class HealthOut(BaseModel):
@@ -113,12 +157,14 @@ class UserOut(BaseModel):
 
 
 __all__ = [
+    "AuditBriefOut",
     "CompanyOut",
     "KPISummaryOut",
     "AnomalyRecordOut",
     "CierreReportOut",
     "ChatHistoryMessage",
     "ChatRequest",
+    "CorporativoChatRequest",
     "HealthOut",
     "TokenOut",
     "UserOut",

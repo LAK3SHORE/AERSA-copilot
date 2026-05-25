@@ -37,6 +37,7 @@ from typing import Any, AsyncIterator
 import ollama
 
 from config import settings
+from llm.corporativo_prompt import build_corporativo_system_prompt
 from llm.prompts import build_system_prompt
 from llm.streaming import (
     done_event,
@@ -45,6 +46,7 @@ from llm.streaming import (
     tool_call_event,
     tool_result_event,
 )
+from analytics.mcp_tracking import record_tool_event
 from llm.tool_schemas import get_ollama_tool_schemas
 from mcp_server.server import TOOL_REGISTRY
 
@@ -125,20 +127,38 @@ async def _execute_tool(
     args: dict[str, Any],
     idempresa: int,
     periodo: str,
+    *,
+    user_id: int | None = None,
+    session_id: int | None = None,
 ) -> dict[str, Any]:
     fn = TOOL_REGISTRY.get(name)
     if fn is None:
         return {"error": "unknown_tool", "message": f"Tool '{name}' no existe."}
     args = _coerce_arg_types(name, _inject_context(name, args, idempresa, periodo))
+    t0 = time.perf_counter()
     try:
         # MCP tools are sync (SQLAlchemy I/O). Run in a thread so we don't
         # stall the event loop during the ~5s first-call report build.
-        return await asyncio.to_thread(fn, **args)
+        result = await asyncio.to_thread(fn, **args)
     except TypeError as exc:
-        return {"error": "bad_arguments", "message": f"{exc}"}
+        result = {"error": "bad_arguments", "message": f"{exc}"}
     except Exception as exc:  # noqa: BLE001
         log.exception("tool %s failed", name)
-        return {"error": "tool_error", "message": str(exc)}
+        result = {"error": "tool_error", "message": str(exc)}
+
+    if user_id is not None:
+        err = result.get("message") if isinstance(result, dict) and "error" in result else None
+        record_tool_event(
+            user_id=user_id,
+            session_id=session_id,
+            tool_name=name,
+            duration_ms=int((time.perf_counter() - t0) * 1000),
+            success=not (isinstance(result, dict) and "error" in result),
+            error_msg=err,
+            idempresa=idempresa,
+            periodo=periodo,
+        )
+    return result
 
 
 async def _collect_response(
@@ -226,6 +246,54 @@ _FALLBACK_LIMIT = (
 )
 
 
+async def run_corporativo_agent(
+    user_message: str,
+    analytics: dict[str, Any],
+    history: list[dict[str, Any]] | None = None,
+    days: int = 30,
+    model: str | None = None,
+) -> AsyncIterator[dict[str, Any]]:
+    """Owner copilot: answers from analytics JSON only (no MCP tools)."""
+    history = list(history or [])
+    model = model or settings.ollama_model
+    client = ollama.AsyncClient(host=settings.ollama_host)
+    system = build_corporativo_system_prompt(analytics, days)
+    messages: list[dict[str, Any]] = [
+        {"role": "system", "content": system},
+        *history,
+        {"role": "user", "content": user_message},
+    ]
+
+    final_text = ""
+    try:
+        stream = await client.chat(
+            model=model,
+            messages=messages,
+            stream=True,
+            think=False,
+            options={"temperature": 0.2, "num_ctx": 8192},
+        )
+        text_parts: list[str] = []
+        async for chunk in stream:
+            msg = getattr(chunk, "message", None)
+            if msg is None:
+                continue
+            content = getattr(msg, "content", None)
+            if content:
+                text_parts.append(content)
+        raw = "".join(text_parts)
+        cleaned = _sanitize_synthesis(raw) or _FALLBACK_EMPTY
+        final_text = cleaned
+        for piece in _chunk_for_streaming(cleaned):
+            yield token_event(piece)
+    except Exception as exc:  # noqa: BLE001
+        log.exception("corporativo chat failed")
+        yield error_event(f"LLM no disponible: {exc}")
+        return
+
+    yield done_event(final_text)
+
+
 async def run_agent(
     idempresa: int,
     periodo: str,
@@ -233,6 +301,9 @@ async def run_agent(
     history: list[dict[str, Any]] | None = None,
     num_almacenes: int | None = None,
     model: str | None = None,
+    user_id: int | None = None,
+    session_id: int | None = None,
+    system_prompt: str | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
     """Async generator: drives the Gemma tool-calling loop, yields SSE events.
 
@@ -249,7 +320,7 @@ async def run_agent(
 
     client = ollama.AsyncClient(host=settings.ollama_host)
     tools = await get_ollama_tool_schemas()
-    system = build_system_prompt(idempresa, periodo, num_almacenes)
+    system = system_prompt or build_system_prompt(idempresa, periodo, num_almacenes)
     messages: list[dict[str, Any]] = [
         {"role": "system", "content": system},
         *history,
@@ -324,7 +395,14 @@ async def run_agent(
         })
         for tc in round_tool_calls:
             yield tool_call_event(tc["name"], tc["arguments"])
-            result = await _execute_tool(tc["name"], tc["arguments"], idempresa, periodo)
+            result = await _execute_tool(
+                tc["name"],
+                tc["arguments"],
+                idempresa,
+                periodo,
+                user_id=user_id,
+                session_id=session_id,
+            )
             status = "error" if isinstance(result, dict) and "error" in result else "done"
             yield tool_result_event(
                 tc["name"],
@@ -344,4 +422,4 @@ async def run_agent(
     yield done_event(final_text)
 
 
-__all__ = ["run_agent", "MAX_TOOL_ROUNDS"]
+__all__ = ["run_agent", "run_corporativo_agent", "MAX_TOOL_ROUNDS"]

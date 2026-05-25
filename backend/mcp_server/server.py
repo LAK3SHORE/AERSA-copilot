@@ -16,6 +16,7 @@ from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
+from mcp_server.tools.audit_brief import generate_audit_brief as _audit_brief
 from mcp_server.tools.category_shrinkage import get_category_shrinkage as _cat_shrink
 from mcp_server.tools.cierre_summary import get_cierre_summary as _cierre_summary
 from mcp_server.tools.product_history import get_product_history as _product_history
@@ -116,11 +117,32 @@ def get_category_shrinkage(
     return result
 
 
+@mcp.tool()
+def generate_audit_brief(idempresa: int, periodo: str) -> dict[str, Any]:
+    """Briefing guiado \"¿Por dónde empiezo?\" para (idempresa, periodo).
+
+    Devuelve un resumen ejecutivo y una lista priorizada de acciones
+    recomendadas (producto, severidad, impacto, prompt sugerido). Úsalo
+    cuando el auditor pregunte por dónde empezar, qué revisar primero,
+    o pida un plan de auditoría para el Cierre.
+    """
+    t0 = time.perf_counter()
+    result = _audit_brief(idempresa, periodo)
+    _log_call(
+        "generate_audit_brief",
+        {"idempresa": idempresa, "periodo": periodo},
+        (time.perf_counter() - t0) * 1000,
+        result,
+    )
+    return result
+
+
 TOOL_REGISTRY: dict[str, Any] = {
     "get_cierre_summary": get_cierre_summary,
     "get_top_anomalies": get_top_anomalies,
     "get_product_history": get_product_history,
     "get_category_shrinkage": get_category_shrinkage,
+    "generate_audit_brief": generate_audit_brief,
 }
 
 

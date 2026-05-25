@@ -86,7 +86,7 @@ def main() -> int:
     _expect(status in (200, 404), "admin cierre any empresa → allowed")
 
     status, overview = _get(base, "/api/analytics/overview", tok_admin)
-    _expect(status == 200 and overview.get("status") == "stub", "admin analytics → 200")
+    _expect(status == 200 and "total_sessions" in overview, "admin analytics overview")
 
     print("\n[test_auth] All checks passed.")
     return 0

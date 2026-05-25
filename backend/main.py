@@ -17,10 +17,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from api.models import HealthOut
 from api.routes.analytics import router as analytics_router
 from api.routes.auth import router as auth_router
+from api.routes.brief import router as brief_router
 from api.routes.chat import router as chat_router
 from api.routes.cierre import router as cierre_router
 from api.routes.companies import router as companies_router
+from api.routes.findings import router as findings_router
 from api.routes.periods import router as periods_router
+from api.routes.sessions import router as sessions_router
 from config import settings
 from db.connection import healthcheck
 
@@ -45,6 +48,9 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(analytics_router)
+app.include_router(brief_router)
+app.include_router(findings_router)
+app.include_router(sessions_router)
 app.include_router(companies_router)
 app.include_router(periods_router)
 app.include_router(cierre_router)

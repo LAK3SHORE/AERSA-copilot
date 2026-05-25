@@ -12,6 +12,8 @@ import time
 
 from fastapi import APIRouter, Depends, HTTPException, Path, Query
 
+from analytics.findings import get_statuses_for_lines
+from analytics.logging import log_event, start_session
 from api.models import CierreReportOut
 from auth.dependencies import assert_empresa_access, get_current_user
 from auth.models import User
@@ -60,4 +62,17 @@ def get_cierre(
             detail=f"no_data: sin inventarios finalizados para empresa {idempresa} en {periodo}",
         )
 
-    return CierreReportOut.model_validate(report.to_dict())
+    session_id = start_session(user.id, idempresa, periodo)
+    log_event(
+        session_id,
+        user.id,
+        "cierre_load",
+        {"idempresa": idempresa, "periodo": periodo},
+    )
+
+    payload = report.to_dict()
+    line_ids = [a["idinventariomesdetalle"] for a in payload.get("top_anomalies", [])]
+    statuses = get_statuses_for_lines(line_ids)
+    payload["audit_session_id"] = session_id
+    payload["finding_statuses"] = statuses
+    return CierreReportOut.model_validate(payload)
