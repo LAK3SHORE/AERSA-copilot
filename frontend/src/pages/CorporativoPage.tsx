@@ -82,22 +82,6 @@ export function CorporativoPage() {
     [messages],
   );
 
-  if (tab === "auditor") {
-    return (
-      <div className="relative z-10 flex flex-col h-screen">
-        <CorporativoHeader
-          username={user?.username}
-          tab={tab}
-          onTab={setTab}
-          onLogout={logout}
-        />
-        <div className="flex-1 min-h-0">
-          <AuditorPage embedded />
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="relative z-10 flex flex-col h-screen">
       <CorporativoHeader
@@ -107,6 +91,10 @@ export function CorporativoPage() {
         onLogout={logout}
       />
 
+      <div
+        className={`flex-1 min-h-0 flex flex-col ${tab === "panel" ? "" : "hidden"}`}
+        aria-hidden={tab !== "panel"}
+      >
       <main className="flex-1 grid grid-cols-1 lg:grid-cols-[minmax(380px,42%)_1fr] min-h-0">
         <aside className="border-r hairline flex flex-col min-h-0">
           {dashError && (
@@ -136,6 +124,14 @@ export function CorporativoPage() {
       <footer className="border-t hairline px-7 py-2.5 font-mono text-[10px] tracking-widish text-ink-4">
         Panel corporativo · analytics.db · últimos 30 días
       </footer>
+      </div>
+
+      <div
+        className={`flex-1 min-h-0 ${tab === "auditor" ? "" : "hidden"}`}
+        aria-hidden={tab !== "auditor"}
+      >
+        <AuditorPage embedded />
+      </div>
     </div>
   );
 }
