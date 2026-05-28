@@ -55,7 +55,11 @@ class AnomalyRecordOut(BaseModel):
     z_score: float | None = None
     financial_impact_mxn: float
     priority_score: float
+    score_ponderado: float
     severity_label: Literal["CRÍTICO", "ALTO", "MEDIO", "BAJO"]
+    stock_fisico: float
+    stock_teorico: float
+    delta: float
     mean_merma_rate_hist: float | None = None
     recurrence_count: int
     unidad_medida: str
@@ -127,6 +131,36 @@ class CierreReportOut(BaseModel):
     data_quality_warnings: list[str] = Field(default_factory=list)
     audit_session_id: int | None = None
     finding_statuses: dict[int, str] = Field(default_factory=dict)
+
+
+class RawRowOut(BaseModel):
+    idalmacen: int
+    almacen: str
+    idprod: int
+    producto: str
+    cat: str
+    sf: float
+    st: float
+    d: float
+    mp: float
+    mxn: float
+    z: float
+
+
+class RawCierreOut(BaseModel):
+    tabla: str
+    idempresa: int
+    periodo: str
+    total_rows: int
+    rows: list[RawRowOut]
+
+
+class Nl2SqlRequest(BaseModel):
+    message: str = Field(min_length=1, max_length=4000)
+    history: list[ChatHistoryMessage] = Field(default_factory=list)
+    idempresa: int = Field(ge=1)
+    periodo: str = Field(pattern=r"^\d{4}-\d{2}$")
+    tabla: str = "cierre_detalle"
 
 
 class HealthOut(BaseModel):

@@ -14,7 +14,7 @@ import pandas as pd
 from db.queries.cierre import fetch_kpi_row, fetch_lines, fetch_top_categoria_faltante
 from engine.anomaly import annotate_lines, compute_baseline
 from engine.cleaning import filter_lines
-from engine.scoring import compute_priority_scores
+from engine.scoring import compute_priority_scores, compute_score_ponderado
 
 
 @dataclass
@@ -49,7 +49,11 @@ class AnomalyRecord:
     z_score: float | None
     financial_impact_mxn: float
     priority_score: float
+    score_ponderado: float
     severity_label: str
+    stock_fisico: float
+    stock_teorico: float
+    delta: float
     mean_merma_rate_hist: float | None
     recurrence_count: int
     unidad_medida: str
@@ -125,7 +129,11 @@ def _row_to_anomaly(r: pd.Series, periodo: str) -> AnomalyRecord:
         z_score=f(r.get("z_score")),
         financial_impact_mxn=f(r.get("financial_impact_mxn")) or 0.0,
         priority_score=f(r.get("priority_score")) or 0.0,
+        score_ponderado=f(r.get("score_ponderado")) or 0.0,
         severity_label=str(r["severity_label"]),
+        stock_fisico=float(r.get("stock_fisico") or 0.0),
+        stock_teorico=float(r.get("stock_teorico") or 0.0),
+        delta=float(r.get("diferencia") if pd.notna(r.get("diferencia")) else 0.0),
         mean_merma_rate_hist=f(r.get("mean_merma_rate_hist")),
         recurrence_count=int(r.get("recurrence_count") or 0),
         unidad_medida=str(r.get("unidad_medida") or "—"),
@@ -169,7 +177,7 @@ def build_cierre_report(
             f"(<{_s.anomaly_min_history_periods} periodos)"
         )
 
-    scored = compute_priority_scores(annotated)
+    scored = compute_score_ponderado(compute_priority_scores(annotated))
 
     # Total "real" anomalies = lines with z>soft OR iqr_outlier OR
     # (no baseline but merma_rate is meaningfully positive).
@@ -181,7 +189,7 @@ def build_cierre_report(
     )
 
     top = (
-        scored.sort_values("priority_score", ascending=False)
+        scored.sort_values("score_ponderado", ascending=False)
         .head(top_n)
         .reset_index(drop=True)
     )

@@ -14,8 +14,37 @@
   }
 
   body {
-    background: #f8f3e1;
+    background: #fff8e3;
+    color: #333333;
     font-feature-settings: "ss01";
+  }
+
+  .md-content p {
+    margin-bottom: 10px;
+  }
+  .md-content ul,
+  .md-content ol {
+    margin: 6px 0 10px 18px;
+  }
+  .md-content li {
+    margin-bottom: 4px;
+    line-height: 1.6;
+  }
+  .md-content strong {
+    font-weight: 600;
+  }
+  .md-content code {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 10.5px;
+    background: rgba(132, 172, 55, 0.05);
+    padding: 1px 4px;
+  }
+  .md-content pre {
+    background: rgba(132, 172, 55, 0.07);
+    padding: 10px 12px;
+    overflow-x: auto;
+    font-size: 10px;
+    margin: 8px 0;
   }
 
   /* tabular numerics by default for monospace */

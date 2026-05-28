@@ -1,4 +1,4 @@
-import type { AnomalyRecord, AuditBriefAction } from "../types";
+import type { AccionItem, Hallazgo } from "../types/cierre";
 
 export interface FindingContextPayload {
   idinventariomesdetalle: number;
@@ -20,7 +20,7 @@ export function displayPromptForFinding(
   );
 }
 
-export function contextFromAnomaly(a: AnomalyRecord): FindingContextPayload {
+export function contextFromHallazgo(a: Hallazgo): FindingContextPayload {
   return {
     idinventariomesdetalle: a.idinventariomesdetalle,
     idproducto: a.idproducto,
@@ -31,7 +31,10 @@ export function contextFromAnomaly(a: AnomalyRecord): FindingContextPayload {
   };
 }
 
-export function contextFromBriefAction(a: AuditBriefAction): FindingContextPayload {
+/** @deprecated use contextFromHallazgo */
+export const contextFromAnomaly = contextFromHallazgo;
+
+export function contextFromBriefAction(a: AccionItem): FindingContextPayload {
   return {
     idinventariomesdetalle: a.idinventariomesdetalle,
     idproducto: a.idproducto,

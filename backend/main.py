@@ -23,6 +23,8 @@ from api.routes.cierre import router as cierre_router
 from api.routes.companies import router as companies_router
 from api.routes.findings import router as findings_router
 from api.routes.periods import router as periods_router
+from api.routes.query import router as query_router
+from api.routes.raw import router as raw_router
 from api.routes.sessions import router as sessions_router
 from config import settings
 from db.connection import healthcheck
@@ -55,6 +57,8 @@ app.include_router(companies_router)
 app.include_router(periods_router)
 app.include_router(cierre_router)
 app.include_router(chat_router)
+app.include_router(raw_router, prefix="/api/raw")
+app.include_router(query_router)
 
 
 @app.get("/api/health", response_model=HealthOut, tags=["health"])

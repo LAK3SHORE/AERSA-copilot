@@ -4,28 +4,28 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Light editorial palette — cream ground, dark teal text, green accents.
         cream: {
-          DEFAULT: "#F8F3E1", // page ground
-          2: "#F1EAD0",       // raised surface (input, hover)
-          3: "#E8DFC0",       // selected / active surface
+          DEFAULT: "#FFF8E3",
+          2: "#FFFDF5",
+          3: "#D0DB97",
         },
         ink: {
-          DEFAULT: "#091413", // primary text
-          2: "#1d2e2b",       // secondary text
-          3: "#3d524e",       // tertiary / labels
-          4: "#6b7c78",       // muted / captions
-          5: "#94a3a0",       // very muted / dividers
+          DEFAULT: "#333333",
+          2: "rgba(51,51,51,0.68)",
+          3: "rgba(51,51,51,0.48)",
+          4: "rgba(51,51,51,0.38)",
+          5: "rgba(51,51,51,0.28)",
         },
         accent: {
-          DEFAULT: "#285A48", // deep — primary buttons, important borders
-          2: "#408A71",       // mid — links, hover, secondary buttons
-          3: "#B0E4CC",       // mint — subtle borders, success, highlights
+          DEFAULT: "#84AC37",
+          2: "#869C4E",
+          3: "rgba(132,172,55,0.07)",
         },
-        crit: "#B23A3A",      // CRÍTICO — muted red on cream
-        alto: "#D87A2C",      // ALTO — burnt orange
-        medio: "#C49A2C",     // MEDIO — ochre
-        bajo: "#7A8A7E",      // BAJO — slate sage
+        crit: "#B83025",
+        alto: "#C26020",
+        medio: "#9C7E10",
+        bajo: "#5E7B5A",
+        stepper: "#333333",
       },
       fontFamily: {
         sans: ['"IBM Plex Sans"', "ui-sans-serif", "system-ui", "sans-serif"],

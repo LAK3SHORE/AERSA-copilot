@@ -6,12 +6,20 @@ Each annotated line gets a 0–100 priority score combining:
   - recurrence (count of recent periods over threshold, capped at 4)
   - category weight (Alimentos 1.0, Bebidas 1.2, Gastos 0.8)
 
-The score then maps to a CRÍTICO / ALTO / MEDIO / BAJO label.
+`score_ponderado` (Session 15) is a separate min-max composite used to rank
+hallazgos in the UI — see `compute_score_ponderado`.
 """
 from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+
+# Session 15 — weighted ranking score (configurable)
+W_Z = 0.40
+W_SCORE = 0.25
+W_REC = 0.15
+W_MXN = 0.12
+W_MERMA = 0.08
 
 # Top-level idcategoria → multiplier (CLAUDE.md 6.3).
 # 1=Alimentos, 2=Bebidas, 3=Gastos. Anything else falls back to 1.0.
@@ -83,4 +91,52 @@ def compute_priority_scores(df: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-__all__ = ["compute_priority_scores", "CATEGORY_WEIGHTS", "SEVERITY_BANDS"]
+def _min_max_norm(series: pd.Series) -> pd.Series:
+    """Normalize to [0, 1] across the Cierre; flat series → zeros."""
+    s = series.astype(float).fillna(0.0)
+    lo, hi = float(s.min()), float(s.max())
+    if hi <= lo:
+        return pd.Series(0.0, index=s.index)
+    return (s - lo) / (hi - lo)
+
+
+def compute_score_ponderado(df: pd.DataFrame) -> pd.DataFrame:
+    """Add `score_ponderado` (0–100) for hallazgo ranking (Session 15).
+
+    Min-max normalization is per-cierre across all rows in `df`.
+    Expects columns from `compute_priority_scores`: z_score, priority_score,
+    recurrence_count, financial_impact_mxn, merma_rate.
+    """
+    if df.empty:
+        return df.assign(score_ponderado=pd.Series(dtype="float64"))
+
+    out = df.copy()
+    z_norm = _min_max_norm(out["z_score"].fillna(0.0))
+    score_norm = _min_max_norm(out["priority_score"].fillna(0.0))
+    rec_norm = _min_max_norm(out["recurrence_count"].astype(float) / 4.0)
+    mxn_norm = _min_max_norm(out["financial_impact_mxn"].fillna(0.0))
+    merma_pct = out["merma_rate"].fillna(0.0).astype(float) * 100.0
+    merma_norm = _min_max_norm(merma_pct)
+
+    raw = (
+        W_Z * z_norm
+        + W_SCORE * score_norm
+        + W_REC * rec_norm
+        + W_MXN * mxn_norm
+        + W_MERMA * merma_norm
+    )
+    out["score_ponderado"] = (raw * 100.0).clip(lower=0.0, upper=100.0).round(1)
+    return out
+
+
+__all__ = [
+    "compute_priority_scores",
+    "compute_score_ponderado",
+    "CATEGORY_WEIGHTS",
+    "SEVERITY_BANDS",
+    "W_Z",
+    "W_SCORE",
+    "W_REC",
+    "W_MXN",
+    "W_MERMA",
+]
