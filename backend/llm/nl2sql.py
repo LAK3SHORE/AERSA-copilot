@@ -20,11 +20,17 @@ from db.connection import engine
 
 log = logging.getLogger("llm.nl2sql")
 
+# REPLACE is intentionally NOT forbidden: `REPLACE INTO ...` (a write) is
+# already blocked by the SELECT-only check in validate_sql, while
+# REPLACE(str, from, to) is a valid read-only string function we must allow.
 _FORBIDDEN = re.compile(
     r"\b(INSERT|UPDATE|DELETE|DROP|ALTER|CREATE|TRUNCATE|EXEC|EXECUTE|"
-    r"GRANT|REVOKE|REPLACE|MERGE|CALL)\b",
+    r"GRANT|REVOKE|MERGE|CALL)\b",
     re.IGNORECASE,
 )
+
+# Hard cap on rows returned to the UI / SQL→Raw cross-filter.
+MAX_ROWS = 500
 
 # Logical name → physical table/view for SHOW COLUMNS + hints
 TABLA_PHYSICAL: dict[str, str] = {
@@ -181,7 +187,12 @@ def repair_sql_aliases(sql: str) -> str:
             continue
         col = tokens[0]
         rest = tokens[1:]
-        if col.lower() not in alias_lower:
+        # Only repair bare identifiers. Never touch function calls or qualified
+        # columns (e.g. SUM(ABS(f.x)), t.col): the naive comma-split can fragment
+        # their arguments, and a fuzzy alias swap would corrupt valid SQL.
+        # Leaving such tokens untouched lets the ", ".join below round-trip the
+        # original clause intact.
+        if re.fullmatch(r"\w+", col) and col.lower() not in alias_lower:
             match = _closest_alias(col, aliases)
             if match and _edit_distance(col.lower(), match.lower()) <= 4:
                 col = match
@@ -189,6 +200,19 @@ def repair_sql_aliases(sql: str) -> str:
 
     order_clause = ", ".join(fixed)
     return sql[: m.start(1)] + order_clause + sql[m.end(1) :]
+
+
+def enforce_limit(sql: str, cap: int = MAX_ROWS) -> str:
+    """Append a LIMIT when the model omitted one.
+
+    Without this an unbounded SELECT scans all of inventario_full and we silently
+    truncate via fetchmany — wasteful and misleading. Existing LIMIT clauses are
+    left untouched (their cap is the model's stated intent; we still only fetch
+    up to MAX_ROWS + 1 at execution time to detect truncation).
+    """
+    if re.search(r"\bLIMIT\b", sql, re.IGNORECASE):
+        return sql
+    return f"{sql.rstrip().rstrip(';').rstrip()} LIMIT {cap}"
 
 
 def validate_sql(sql: str) -> str | None:
@@ -252,11 +276,14 @@ async def run_nl2sql(
     if err:
         return {"error": "validation_error", "message": err, "sql": sql}
 
+    sql = enforce_limit(sql)
+
     try:
         with engine.connect() as conn:
             result = conn.execute(text(sql))
             cols = list(result.keys())
-            rows = [[_cell_json(c) for c in r] for r in result.fetchmany(500)]
+            # Fetch one extra row to detect (and report) silent truncation.
+            fetched = result.fetchmany(MAX_ROWS + 1)
     except Exception as exc:  # noqa: BLE001
         log.warning("nl2sql execute failed: %s", exc)
         return {
@@ -266,12 +293,16 @@ async def run_nl2sql(
             "explanation": parsed.get("explanation", ""),
         }
 
+    truncated = len(fetched) > MAX_ROWS
+    rows = [[_cell_json(c) for c in r] for r in fetched[:MAX_ROWS]]
+
     return {
         "sql": sql,
         "explanation": parsed.get("explanation", ""),
         "columns": cols,
         "rows": rows,
         "row_count": len(rows),
+        "truncated": truncated,
     }
 
 

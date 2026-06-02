@@ -32,6 +32,7 @@ async def _sse_stream(body: Nl2SqlRequest) -> AsyncIterator[dict[str, Any]]:
 
     explanation = result.get("explanation", "")
     row_count = int(result.get("row_count", 0))
+    truncated = bool(result.get("truncated", False))
     yield {
         "data": dumps_sse(
             {
@@ -41,11 +42,13 @@ async def _sse_stream(body: Nl2SqlRequest) -> AsyncIterator[dict[str, Any]]:
                 "columns": result.get("columns", []),
                 "rows": result.get("rows", []),
                 "row_count": row_count,
+                "truncated": truncated,
             }
         )
     }
     # Plain text only — UI renders sql_result (no HTML in chat markdown).
-    summary = f"{explanation}\n\n**{row_count}** filas devueltas."
+    suffix = " (resultado truncado al máximo)" if truncated else ""
+    summary = f"{explanation}\n\n**{row_count}** filas devueltas{suffix}."
     yield {"data": dumps_sse({"type": "done", "content": summary})}
 
 

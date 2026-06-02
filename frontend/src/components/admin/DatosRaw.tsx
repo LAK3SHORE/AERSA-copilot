@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchCompanies } from "../../api/companies";
 import { fetchPeriods } from "../../api/periods";
 import { fetchAllRawCierre, fetchRawCierre } from "../../api/raw";
@@ -67,6 +67,13 @@ export function DatosRaw({
   });
   const [sqlView, setSqlView] = useState<SqlDatosRawPayload | null>(null);
 
+  // `loadRaw` is invoked from the requestId-keyed effect below, whose closure
+  // is captured when the effect last ran. Reading `tabla` through a ref keeps
+  // the fetch + setSqlContext in sync with the current selection instead of a
+  // stale closure value (latent today with one table; bites once more exist).
+  const tablaRef = useRef(tabla);
+  tablaRef.current = tabla;
+
   useEffect(() => {
     fetchCompanies(20).then(setEmpresas).catch(() => {});
   }, []);
@@ -82,18 +89,19 @@ export function DatosRaw({
     openChatAfter: boolean,
     fetchAll = false,
   ) => {
+    const t = tablaRef.current;
     setLoading(true);
     try {
       const res = fetchAll
-        ? await fetchAllRawCierre(Number(emp), per, tabla)
-        : await fetchRawCierre(Number(emp), per, tabla);
+        ? await fetchAllRawCierre(Number(emp), per, t)
+        : await fetchRawCierre(Number(emp), per, t);
       setRows(res.rows);
       setTotalRows(res.total_rows);
       setLoaded(true);
       shell.setSqlContext({
         idempresa: Number(emp),
         periodo: per,
-        tabla,
+        tabla: t,
       });
       if (openChatAfter) {
         shell.openChat(
@@ -128,7 +136,18 @@ export function DatosRaw({
 
   const sqlMatchedRows = useMemo(() => {
     if (!loaded || !sqlView?.filter) return null;
-    return rows.filter((row) => rawRowMatchesSqlFilter(row, sqlView.filter!));
+    // `rows.filter` returns a fresh array, so sorting it in place is safe.
+    // Surface the queried rows: highest financial impact (MXN) first, matching
+    // the "mayor merma / impacto" intent of NL→SQL queries. Without this the
+    // matched lines render in raw fetch order and the relevant products are
+    // buried, making the cross-filter look like it did nothing.
+    const matched = rows
+      .filter((row) => rawRowMatchesSqlFilter(row, sqlView.filter!))
+      .sort((a, b) => b.mxn - a.mxn);
+    // The filter was built (recognized columns) but nothing cross-matched the
+    // raw detail — e.g. aggregated/renamed names that don't line up. Fall back
+    // to the full cierre instead of showing an empty "SIN RESULTADOS" table.
+    return matched.length ? matched : null;
   }, [loaded, rows, sqlView]);
 
   const filteredRows = useMemo(() => {
@@ -285,9 +304,11 @@ export function DatosRaw({
           <p className="font-sans text-[11px] text-ink leading-snug mb-1">{sqlView.explanation}</p>
           <p className="font-mono text-[10px] text-ink-3 mb-2">
             {sqlView.sqlRowCount} filas en la consulta
-            {sqlView.filter && sqlMatchedRows != null
+            {sqlMatchedRows != null
               ? ` · ${sqlMatchedRows.length} líneas de detalle en Datos Raw`
-              : " · sin IDs/nombres para cruzar: mostrando cierre completo"}
+              : sqlView.filter
+                ? " · sin coincidencias exactas: mostrando cierre completo"
+                : " · sin IDs/nombres para cruzar: mostrando cierre completo"}
           </p>
           <button
             type="button"

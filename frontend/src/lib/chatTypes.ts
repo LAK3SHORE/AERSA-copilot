@@ -14,6 +14,8 @@ export interface SqlResultPayload {
   columns: string[];
   rows: unknown[][];
   row_count: number;
+  /** True when the result hit the MAX_ROWS cap and was cut off server-side. */
+  truncated?: boolean;
 }
 
 /** Subset filter applied to Datos Raw rows after an NL→SQL query. */

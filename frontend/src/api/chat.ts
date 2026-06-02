@@ -85,7 +85,7 @@ export async function streamCorporativoChat(
 }
 
 export type Nl2SqlEvent =
-  | { type: "sql_result"; sql: string; explanation: string; columns: string[]; rows: unknown[][]; row_count: number }
+  | { type: "sql_result"; sql: string; explanation: string; columns: string[]; rows: unknown[][]; row_count: number; truncated?: boolean }
   | { type: "done"; content: string }
   | { type: "error"; message: string };
 

@@ -55,6 +55,9 @@ export function ChatMsg({
           <p className="font-mono text-[10px] text-ink-3">
             {msg.sqlResult!.row_count}{" "}
             {msg.sqlResult!.row_count === 1 ? "fila devuelta" : "filas devueltas"}
+            {msg.sqlResult!.truncated && (
+              <span className="text-[#C26020]"> · resultado truncado al máximo</span>
+            )}
           </p>
           <pre className="bg-accent/5 p-2.5 text-[10px] overflow-x-auto font-mono border border-accent-3/40">
             <code>{msg.sqlResult!.sql}</code>

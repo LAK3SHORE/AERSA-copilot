@@ -95,6 +95,7 @@ export function useAppChat(ctx: ChatContext) {
                     columns: evt.columns,
                     rows: evt.rows,
                     row_count: evt.row_count,
+                    truncated: evt.truncated,
                   };
                   updateAssistant({
                     sqlResult,
