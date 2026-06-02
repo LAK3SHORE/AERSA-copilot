@@ -1,3 +1,4 @@
+# Improve the extension and modularity of this dir
 """FastMCP server for the AERSA Copilot.
 
 Registers the four v0 tools (CLAUDE.md 7) against a single `FastMCP`
