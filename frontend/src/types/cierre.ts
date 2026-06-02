@@ -76,7 +76,10 @@ export interface AuditBrief {
 }
 
 export interface Herramienta {
-  nombre: string;
+  /** MCP tool id (internal). */
+  id: string;
+  /** User-facing label in the UI. */
+  titulo: string;
   desc: string;
   ejemplo: string;
   prompt: string;

@@ -1,10 +1,10 @@
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { useAuth } from "../auth/AuthContext";
 import { ChatDrawer } from "./chat/ChatDrawer";
-import { AppFooter } from "./layout/AppFooter";
 import { AppHeader } from "./layout/AppHeader";
 import { useAppChat } from "../hooks/useAppChat";
-import type { ChatMode, OpenChatFn } from "../lib/chatTypes";
+import type { ChatMode, OpenChatFn, SqlDatosRawPayload, SqlResultPayload } from "../lib/chatTypes";
+import { buildSqlRawFilter } from "../lib/sqlToRawFilter";
 import type { FindingContextPayload } from "../lib/findingPrompt";
 
 const CHAT_WIDTH = 450;
@@ -22,6 +22,9 @@ export interface AppShellContext {
   setChatMode: (m: ChatMode) => void;
   setSqlContext: (ctx: { idempresa: number; periodo: string; tabla: string }) => void;
   chatReady: boolean;
+  showSqlInDatosRaw: (result: SqlResultPayload) => void;
+  sqlDatosRawPayload: SqlDatosRawPayload | null;
+  clearSqlDatosRaw: () => void;
 }
 
 interface Props {
@@ -42,6 +45,9 @@ export function AppShell({ isAdmin, children, sqlTabla = "cierre_detalle" }: Pro
   const [periodo, setPeriodo] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<number | null>(null);
   const [tabla, setTabla] = useState(sqlTabla);
+  const [sqlDatosRawPayload, setSqlDatosRawPayload] = useState<SqlDatosRawPayload | null>(
+    null,
+  );
 
   const pendingFinding = useRef<FindingContextPayload | null>(null);
 
@@ -54,14 +60,14 @@ export function AppShell({ isAdmin, children, sqlTabla = "cierre_detalle" }: Pro
 
   const openChat: OpenChatFn = useCallback(
     (prompt, mode, opts) => {
-      const m = mode ?? (isAdmin ? "analytics" : "audit");
+      const m = mode ?? chatMode;
       setChatMode(m);
       pendingFinding.current = opts?.findingContext ?? null;
       setChatSeed(prompt);
       setChatSeedK((k) => k + 1);
       setChatOpen(true);
     },
-    [isAdmin],
+    [chatMode],
   );
 
   const setCierreContext = useCallback(
@@ -95,6 +101,22 @@ export function AppShell({ isAdmin, children, sqlTabla = "cierre_detalle" }: Pro
     chatMode === "analytics" ||
     (chatMode === "sql" ? idempresa != null && periodo != null : idempresa != null && periodo != null);
 
+  const showSqlInDatosRaw = useCallback(
+    (result: SqlResultPayload) => {
+      if (!isAdmin || idempresa == null || !periodo) return;
+      setSqlDatosRawPayload({
+        idempresa,
+        periodo,
+        sql: result.sql,
+        explanation: result.explanation,
+        sqlRowCount: result.row_count,
+        filter: buildSqlRawFilter(result.columns, result.rows),
+        requestId: Date.now(),
+      });
+    },
+    [isAdmin, idempresa, periodo],
+  );
+
   return (
     <div className="h-screen flex flex-col bg-cream text-ink overflow-hidden">
       <AppHeader
@@ -119,6 +141,9 @@ export function AppShell({ isAdmin, children, sqlTabla = "cierre_detalle" }: Pro
             setChatMode,
             setSqlContext,
             chatReady: chatReady ?? false,
+            showSqlInDatosRaw,
+            sqlDatosRawPayload,
+            clearSqlDatosRaw: () => setSqlDatosRawPayload(null),
           })}
         </div>
 
@@ -140,12 +165,12 @@ export function AppShell({ isAdmin, children, sqlTabla = "cierre_detalle" }: Pro
               pending={pending}
               onSend={handleSend}
               ready={chatReady}
+              onShowSqlInDatosRaw={isAdmin ? showSqlInDatosRaw : undefined}
+              canShowSqlInDatosRaw={isAdmin && idempresa != null && periodo != null}
             />
           </div>
         </div>
       </div>
-
-      <AppFooter sessionId={sessionId} />
     </div>
   );
 }

@@ -16,6 +16,28 @@ export interface SqlResultPayload {
   row_count: number;
 }
 
+/** Subset filter applied to Datos Raw rows after an NL→SQL query. */
+export interface SqlRawRowFilter {
+  productIds?: number[];
+  almacenIds?: number[];
+  productNames?: string[];
+  almacenNames?: string[];
+  /** Normalized keys for exact match (avoids substring false positives). */
+  productNameKeys?: Set<string>;
+  almacenNameKeys?: Set<string>;
+}
+
+export interface SqlDatosRawPayload {
+  idempresa: number;
+  periodo: string;
+  sql: string;
+  explanation: string;
+  sqlRowCount: number;
+  filter: SqlRawRowFilter | null;
+  /** Bumps on each request so Datos Raw reloads even for the same query. */
+  requestId: number;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;

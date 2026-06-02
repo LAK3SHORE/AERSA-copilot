@@ -33,7 +33,7 @@ export function KPIsSection({
             </div>
             <button
               type="button"
-              onClick={() => openChat(kpiPrompt)}
+              onClick={() => openChat(kpiPrompt, "audit")}
               className="font-mono text-[32px] font-semibold tracking-tight leading-none text-ink cursor-pointer bg-transparent border-0 p-0 text-left"
             >
               {mxn(c.total_faltantes_mxn)}
@@ -50,7 +50,7 @@ export function KPIsSection({
             <button
               key={t.label}
               type="button"
-              onClick={() => openChat(kpiPrompt)}
+              onClick={() => openChat(kpiPrompt, "audit")}
               className="px-3 py-2.5 text-left border-r border-accent-3 last:border-r-0 bg-cream-2 hover:bg-black/5 cursor-pointer border-t-[3px] border-t-accent transition-colors"
             >
               <div className="font-mono text-[9px] tracking-widish text-ink-3 mb-1 font-semibold">

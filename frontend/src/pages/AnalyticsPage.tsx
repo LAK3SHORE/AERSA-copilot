@@ -54,8 +54,11 @@ export function AnalyticsPage({ onBack }: { onBack: () => void }) {
             <StatCard label="Sesiones (30d)" value={String(overview.total_sessions)} />
             <StatCard label="Auditores activos" value={String(overview.active_auditors)} />
             <StatCard
-              label="Preguntas / sesión"
-              value={overview.avg_questions_per_session.toFixed(1)}
+              label="Mensajes chat (30d)"
+              value={String(
+                (overview as { total_chat_messages?: number }).total_chat_messages ??
+                  overview.avg_questions_per_session,
+              )}
             />
             <StatCard
               label="Herramientas distintas"

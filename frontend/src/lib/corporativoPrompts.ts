@@ -1,11 +1,13 @@
 import type { CorporativoDashboard } from "../types";
+import { mcpToolLabel } from "./mcpToolLabels";
 
 export function promptSessions(d: CorporativoDashboard): string {
   const o = d.overview;
   return (
     `En los últimos ${d.period_days} días hubo ${o.total_sessions} sesiones de auditoría ` +
-    `con ${o.active_auditors} auditores activos y un promedio de ${o.avg_questions_per_session.toFixed(1)} ` +
-    `preguntas por sesión. ¿Qué empresas o auditores están rezagados y qué acciones recomiendas para AERSA?`
+    `con ${o.active_auditors} auditores activos, ${o.total_chat_messages ?? 0} mensajes de chat ` +
+    `y ${o.sessions_with_mcp ?? 0} sesiones con uso de herramientas MCP. ` +
+    `¿Qué empresas o auditores están rezagados y qué acciones recomiendas para AERSA?`
   );
 }
 
@@ -24,7 +26,7 @@ export function promptMostUsed(d: CorporativoDashboard): string {
     return "No hay llamadas MCP registradas aún. ¿Qué implica esto para la adopción del copiloto?";
   }
   return (
-    `La herramienta MCP más usada es "${t.tool_name}" con ${t.total_calls} invocaciones ` +
+    `La herramienta MCP más usada es «${mcpToolLabel(t.tool_name)}» con ${t.total_calls} invocaciones ` +
     `(promedio ${Math.round(t.avg_duration_ms)} ms, ${t.errors} errores, ${t.unique_users} usuarios). ` +
     `¿Por qué domina, qué riesgos tiene depender de ella, y qué deberíamos vigilar?`
   );
@@ -36,7 +38,7 @@ export function promptLeastUsed(d: CorporativoDashboard): string {
     return "No hay datos de herramientas MCP. ¿Cómo deberíamos interpretar la adopción?";
   }
   return (
-    `La herramienta MCP menos usada es "${t.tool_name}" con solo ${t.total_calls} invocaciones ` +
+    `La herramienta MCP menos usada es «${mcpToolLabel(t.tool_name)}» con solo ${t.total_calls} invocaciones ` +
     `en ${d.period_days} días. ¿Es subutilización, falta de capacitación, o no aplica al flujo actual? ` +
     `¿Qué recomendarías para aumentar su uso donde aporte valor?`
   );
@@ -67,7 +69,7 @@ export function promptAuditor(
 export function promptToolRanking(d: CorporativoDashboard): string {
   const lines = d.tools.ranking
     .slice(0, 6)
-    .map((t) => `- ${t.tool_name}: ${t.total_calls} llamadas`)
+    .map((t) => `- ${mcpToolLabel(t.tool_name)}: ${t.total_calls} llamadas`)
     .join("\n");
   return (
     `Ranking de herramientas MCP (últimos ${d.period_days} días):\n${lines}\n\n` +

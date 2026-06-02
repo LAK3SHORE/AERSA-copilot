@@ -209,11 +209,32 @@ def aggregate_overview(days: int = 30) -> dict[str, Any]:
     chat_msgs = int(totals["total_chat_messages"] or 0)
     avg_questions = round(chat_msgs / total_sessions, 2) if total_sessions else 0.0
 
+    tool_calls = sum(int(t.get("total_calls") or 0) for t in usage["by_tool"])
+    with analytics_session_scope() as session:
+        mcp_sess = session.execute(
+            text(
+                """
+                SELECT COUNT(DISTINCT session_id) AS n
+                FROM mcp_tool_events
+                WHERE created_at >= datetime('now', :offset)
+                  AND session_id IS NOT NULL
+                """
+            ),
+            {"offset": f"-{int(days)} days"},
+        ).scalar()
+    sessions_with_mcp = int(mcp_sess or 0)
+    avg_mcp_per_session = (
+        round(tool_calls / sessions_with_mcp, 1) if sessions_with_mcp else 0.0
+    )
+
     return {
         "period_days": days,
         "total_sessions": total_sessions,
         "active_auditors": int(totals["active_auditors"] or 0),
+        "total_chat_messages": chat_msgs,
         "avg_questions_per_session": avg_questions,
+        "sessions_with_mcp": sessions_with_mcp,
+        "avg_mcp_calls_per_active_session": avg_mcp_per_session,
         "tool_distribution": usage["by_tool"],
         "sessions_by_week": sessions_by_week,
         "daily_trend": usage["daily_trend"],
@@ -342,6 +363,9 @@ def dashboard_bundle(days: int = 30) -> dict[str, Any]:
         "overview": {
             "total_sessions": overview["total_sessions"],
             "active_auditors": overview["active_auditors"],
+            "total_chat_messages": overview["total_chat_messages"],
+            "sessions_with_mcp": overview["sessions_with_mcp"],
+            "avg_mcp_calls_per_active_session": overview["avg_mcp_calls_per_active_session"],
             "avg_questions_per_session": overview["avg_questions_per_session"],
             "total_tool_calls": total_tool_calls,
             "distinct_tools": len(by_tool),

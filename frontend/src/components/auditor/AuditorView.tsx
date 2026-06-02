@@ -10,6 +10,7 @@ import { buildToolCatalog } from "../../lib/toolsCatalog";
 import { Selector } from "../Selector";
 import { Page1 } from "./Page1";
 import { Page2 } from "./Page2";
+import { ReportSection } from "./report/ReportSection";
 import {
   DEFAULT_FILTERS,
   applyFilters,
@@ -52,6 +53,8 @@ export function AuditorView({
   const [hallPage, setHallPage] = useState(1);
   const [filters, setFilters] = useState<FindingFilters>(DEFAULT_FILTERS);
   const sessionStartRef = useRef(Date.now());
+  const loadInFlightRef = useRef(false);
+  const setCierreContext = shell.setCierreContext;
 
   useEffect(() => {
     if (isAdmin && adminEmpresa != null) setEmpresa(adminEmpresa);
@@ -74,6 +77,8 @@ export function AuditorView({
 
   const loadCierre = useCallback(
     async (id: number, per: string) => {
+      if (loadInFlightRef.current) return;
+      loadInFlightRef.current = true;
       setEmpresa(id);
       setPeriodo(per);
       setStatus("loading");
@@ -82,10 +87,11 @@ export function AuditorView({
       setBrief(null);
       sessionStartRef.current = Date.now();
 
+      const topN = 100;
       try {
-        const data = await fetchCierre(id, per, 100);
+        const data = await fetchCierre(id, per, topN);
         setReport(data);
-        shell.setCierreContext({
+        setCierreContext({
           idempresa: id,
           periodo: per,
           sessionId: data.audit_session_id ?? null,
@@ -98,7 +104,7 @@ export function AuditorView({
 
         setBriefLoading(true);
         try {
-          const b = await fetchBrief(id, per, data.audit_session_id ?? undefined);
+          const b = await fetchBrief(id, per, data.audit_session_id ?? undefined, topN);
           setBrief(b);
         } finally {
           setBriefLoading(false);
@@ -106,9 +112,11 @@ export function AuditorView({
       } catch (e) {
         setStatus("error");
         setLoadError((e as Error).message);
+      } finally {
+        loadInFlightRef.current = false;
       }
     },
-    [shell],
+    [setCierreContext],
   );
 
   const onFilterChange = (key: string, val: unknown) => {
@@ -165,6 +173,7 @@ export function AuditorView({
         {[
           { n: 1, label: "Contexto & Orientación" },
           { n: 2, label: "Hallazgos Priorizados" },
+          { n: 3, label: "Generador de Reporte" },
         ].map((tab) => (
           <button
             key={tab.n}
@@ -206,7 +215,7 @@ export function AuditorView({
 
       {isAdmin && loadKey > 0 && adminEmpresa != null && adminPeriodo && (
         <AdminLoadTrigger
-          key={loadKey}
+          loadKey={loadKey}
           idempresa={adminEmpresa}
           periodo={adminPeriodo}
           onLoad={loadCierre}
@@ -214,8 +223,10 @@ export function AuditorView({
       )}
 
       {status === "loading" && (
-        <div className="px-7 py-8 font-mono text-xs text-ink-3 animate-blink">
-          Generando análisis…
+        <div className="px-7 py-8 font-mono text-xs text-ink-3 animate-blink leading-relaxed">
+          Generando análisis del cierre…
+          <br />
+          <span className="text-ink-4">La primera carga puede tardar ~10–30 s.</span>
         </div>
       )}
       {status === "error" && (
@@ -249,6 +260,13 @@ export function AuditorView({
               allHallazgos={hallazgos}
             />
           )}
+          {viewPage === 3 && (
+            <ReportSection
+              report={report}
+              brief={brief}
+              findingStatuses={findingStatuses}
+            />
+          )}
         </div>
       )}
 
@@ -267,16 +285,22 @@ export function AuditorView({
 }
 
 function AdminLoadTrigger({
+  loadKey,
   idempresa,
   periodo,
   onLoad,
 }: {
+  loadKey: number;
   idempresa: number;
   periodo: string;
   onLoad: (id: number, per: string) => void;
 }) {
+  const onLoadRef = useRef(onLoad);
+  onLoadRef.current = onLoad;
+
   useEffect(() => {
-    onLoad(idempresa, periodo);
-  }, [idempresa, periodo, onLoad]);
+    void onLoadRef.current(idempresa, periodo);
+  }, [loadKey, idempresa, periodo]);
+
   return null;
 }

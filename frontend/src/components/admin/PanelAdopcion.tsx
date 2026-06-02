@@ -3,6 +3,13 @@ import { fetchAnalyticsDashboard } from "../../api/analytics";
 import type { CorporativoDashboard } from "../../types";
 import type { OpenChatFn } from "../../lib/chatTypes";
 import { Eyebrow } from "../shared/Eyebrow";
+import { mcpToolLabel } from "../../lib/mcpToolLabels";
+import {
+  promptAuditorRow,
+  promptEmpresaRow,
+  promptMcpToolAdoption,
+} from "../../lib/mcpToolPrompts";
+import { downloadCsv } from "../../lib/csvExport";
 import { McpBarsChart } from "./McpBarsChart";
 import { SessionLineChart } from "./SessionLineChart";
 
@@ -25,22 +32,34 @@ export function PanelAdopcion({ openChat }: { openChat: OpenChatFn }) {
 
   const d = dash;
   const o = d.overview;
-  const analyticsPrompt = `En los últimos ${d.period_days} días hubo ${o.total_sessions} sesiones con ${o.active_auditors} auditores activos y ${o.total_tool_calls} llamadas MCP. ¿Qué empresas o auditores están rezagados?`;
+  const analyticsPrompt =
+    `En los últimos ${d.period_days} días hubo ${o.total_sessions} sesiones, ` +
+    `${o.active_auditors} auditores activos, ${o.total_chat_messages ?? 0} mensajes de chat ` +
+    `y ${o.total_tool_calls} llamadas MCP en ${o.sessions_with_mcp ?? 0} sesiones con herramientas. ` +
+    `¿Qué empresas o auditores están rezagados?`;
 
   const dailySessions = d.daily_trend.map((x) => x.calls);
   const toolBars = d.tools.ranking.map((t) => ({
-    nombre: t.tool_name,
+    id: t.tool_name,
+    nombre: mcpToolLabel(t.tool_name),
     llamadas: t.total_calls,
   }));
+
+  const openToolPrompt = (toolId: string) => {
+    const tool = d.tools.ranking.find((t) => t.tool_name === toolId);
+    if (!tool) return;
+    openChat(promptMcpToolAdoption(tool, d.period_days), "analytics");
+  };
 
   const kpis = [
     { label: "SESIONES", val: String(o.total_sessions), sub: "últimos 30 días" },
     { label: "AUDITORES ACTIVOS", val: String(o.active_auditors), sub: "en el período" },
     {
-      label: "PREGUNTAS / SESIÓN",
-      val: o.avg_questions_per_session.toFixed(1),
-      sub: "promedio",
+      label: "MCP / SESIÓN ACTIVA",
+      val: (o.avg_mcp_calls_per_active_session ?? 0).toFixed(1),
+      sub: `${o.sessions_with_mcp ?? 0} sesiones con herramientas`,
     },
+    { label: "MENSAJES CHAT", val: String(o.total_chat_messages ?? 0), sub: "total en el período" },
     { label: "LLAMADAS MCP", val: String(o.total_tool_calls), sub: "total herramientas" },
     {
       label: "HERRAMIENTAS USADAS",
@@ -56,7 +75,7 @@ export function PanelAdopcion({ openChat }: { openChat: OpenChatFn }) {
           <Eyebrow>Uso del Copiloto</Eyebrow>
           <span className="font-mono text-[9.5px] text-ink-3">{o.total_tool_calls} total</span>
         </div>
-        <div className="grid grid-cols-5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6">
           {kpis.map((k, i) => (
             <button
               key={k.label}
@@ -88,28 +107,59 @@ export function PanelAdopcion({ openChat }: { openChat: OpenChatFn }) {
           <div className="flex justify-between items-baseline mb-3">
             <Eyebrow>Herramientas MCP</Eyebrow>
             <div className="flex gap-4 text-center">
-              <div>
-                <div className="font-mono text-[8px] text-ink-4 mb-0.5">MÁS USADA</div>
-                <div className="font-mono text-[10px] text-accent">
-                  {d.tools.most_used?.tool_name ?? "—"}
-                </div>
-              </div>
-              <div>
-                <div className="font-mono text-[8px] text-ink-4 mb-0.5">MENOS USADA</div>
-                <div className="font-mono text-[10px] text-ink-3">
-                  {d.tools.least_used?.tool_name ?? "—"}
-                </div>
-              </div>
+              {d.tools.most_used && (
+                <button
+                  type="button"
+                  onClick={() => openToolPrompt(d.tools.most_used!.tool_name)}
+                  className="text-center border-0 bg-transparent cursor-pointer hover:opacity-80"
+                >
+                  <div className="font-mono text-[8px] text-ink-4 mb-0.5">MÁS USADA</div>
+                  <div className="font-mono text-[10px] text-accent">
+                    {mcpToolLabel(d.tools.most_used.tool_name)}
+                  </div>
+                </button>
+              )}
+              {d.tools.least_used && (
+                <button
+                  type="button"
+                  onClick={() => openToolPrompt(d.tools.least_used!.tool_name)}
+                  className="text-center border-0 bg-transparent cursor-pointer hover:opacity-80"
+                >
+                  <div className="font-mono text-[8px] text-ink-4 mb-0.5">MENOS USADA</div>
+                  <div className="font-mono text-[10px] text-ink-3">
+                    {mcpToolLabel(d.tools.least_used.tool_name)}
+                  </div>
+                </button>
+              )}
             </div>
           </div>
-          <McpBarsChart data={toolBars} />
+          <p className="font-mono text-[9px] text-ink-4 mb-2">
+            Clic en una barra para preguntar al copiloto sobre esa herramienta.
+          </p>
+          <McpBarsChart data={toolBars} onSelect={openToolPrompt} />
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="border border-accent-3 p-3.5 bg-cream-2">
-          <div className="mb-2.5 pb-1.5 border-b border-accent-3">
+          <div className="mb-2.5 pb-1.5 border-b border-accent-3 flex items-center justify-between gap-2">
             <Eyebrow>Por Empresa</Eyebrow>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv("adopcion-por-empresa.csv", ["empresa", "sesiones", "mcp", "chat"], d.by_empresa.map(
+                  (row) => [
+                    `Empresa ${row.idempresa}`,
+                    row.audit_sessions,
+                    row.tool_calls,
+                    row.chat_messages,
+                  ],
+                ))
+              }
+              className="font-mono text-[9px] px-2 py-0.5 border border-accent-3 hover:bg-accent/10 cursor-pointer shrink-0"
+            >
+              CSV
+            </button>
           </div>
           <table className="w-full border-collapse">
             <thead>
@@ -133,7 +183,7 @@ export function PanelAdopcion({ openChat }: { openChat: OpenChatFn }) {
                   className={`border-t border-accent-3 cursor-pointer hover:bg-accent/5 ${
                     i % 2 === 1 ? "bg-accent/7" : ""
                   }`}
-                  onClick={() => openChat(analyticsPrompt, "analytics")}
+                  onClick={() => openChat(promptEmpresaRow(row, d.period_days), "analytics")}
                 >
                   <td className="font-sans text-[11.5px] py-1.5">Empresa {row.idempresa}</td>
                   {[row.audit_sessions, row.tool_calls, row.chat_messages].map((v, j) => (
@@ -150,8 +200,21 @@ export function PanelAdopcion({ openChat }: { openChat: OpenChatFn }) {
           </table>
         </div>
         <div className="border border-accent-3 p-3.5 bg-cream-2">
-          <div className="mb-2.5 pb-1.5 border-b border-accent-3">
+          <div className="mb-2.5 pb-1.5 border-b border-accent-3 flex items-center justify-between gap-2">
             <Eyebrow>Por Auditor</Eyebrow>
+            <button
+              type="button"
+              onClick={() =>
+                downloadCsv(
+                  "adopcion-por-auditor.csv",
+                  ["auditor", "mcp", "sesiones"],
+                  d.by_auditor.map((row) => [row.username, row.total_calls, row.total_sessions]),
+                )
+              }
+              className="font-mono text-[9px] px-2 py-0.5 border border-accent-3 hover:bg-accent/10 cursor-pointer shrink-0"
+            >
+              CSV
+            </button>
           </div>
           <table className="w-full border-collapse">
             <thead>
@@ -172,7 +235,16 @@ export function PanelAdopcion({ openChat }: { openChat: OpenChatFn }) {
               {d.by_auditor.map((row, i) => (
                 <tr
                   key={row.user_id}
-                  className={`border-t border-accent-3 hover:bg-accent/5 ${
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => openChat(promptAuditorRow(row, d.period_days), "analytics")}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      openChat(promptAuditorRow(row, d.period_days), "analytics");
+                    }
+                  }}
+                  className={`border-t border-accent-3 cursor-pointer hover:bg-accent/5 ${
                     i % 2 === 1 ? "bg-accent/7" : ""
                   }`}
                 >
@@ -187,6 +259,9 @@ export function PanelAdopcion({ openChat }: { openChat: OpenChatFn }) {
               ))}
             </tbody>
           </table>
+          <p className="font-mono text-[9px] text-ink-4 mt-2">
+            Clic en una fila de auditor para preguntar al copiloto sobre su adopción.
+          </p>
         </div>
       </div>
     </div>

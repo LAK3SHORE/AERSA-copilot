@@ -26,7 +26,7 @@ export function BriefingSection({
     <Section num={2} label="¿Por dónde empiezo?">
       <button
         type="button"
-        onClick={() => openChat(briefingPrompt)}
+        onClick={() => openChat(briefingPrompt, "audit")}
         className="w-full text-left bg-white border border-accent-2/30 border-l-[3px] border-l-accent-2 p-3.5 mb-2.5 hover:bg-accent-2/10 transition-colors"
       >
         <div className="font-mono text-[10px] text-ink-3 mb-1 tracking-widish">

@@ -11,6 +11,9 @@ export interface CorporativoDashboard {
   overview: {
     total_sessions: number;
     active_auditors: number;
+    total_chat_messages: number;
+    sessions_with_mcp: number;
+    avg_mcp_calls_per_active_session: number;
     avg_questions_per_session: number;
     total_tool_calls: number;
     distinct_tools: number;

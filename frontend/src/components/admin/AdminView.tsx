@@ -11,6 +11,7 @@ import { PanelAdopcion } from "./PanelAdopcion";
 type Tab = "auditor" | "adopcion" | "raw";
 
 export function AdminView({ shell }: { shell: AppShellContext }) {
+  const { setCierreContext, setChatMode } = shell;
   const [tab, setTab] = useState<Tab>("adopcion");
   const [adminEmpresa, setAdminEmpresa] = useState<number | null>(null);
   const [adminPeriodo, setAdminPeriodo] = useState<string | null>(null);
@@ -39,8 +40,26 @@ export function AdminView({ shell }: { shell: AppShellContext }) {
 
   const handleTab = (t: Tab) => {
     setTab(t);
-    shell.setChatMode(t === "raw" ? "sql" : "analytics");
+    setChatMode(t === "raw" ? "sql" : t === "auditor" ? "audit" : "analytics");
   };
+
+  useEffect(() => {
+    if (tab !== "auditor" || adminEmpresa == null || !adminPeriodo) return;
+    setCierreContext({
+      idempresa: adminEmpresa,
+      periodo: adminPeriodo,
+      sessionId: null,
+    });
+  }, [tab, adminEmpresa, adminPeriodo, setCierreContext]);
+
+  useEffect(() => {
+    const p = shell.sqlDatosRawPayload;
+    if (!p) return;
+    setAdminEmpresa(p.idempresa);
+    setAdminPeriodo(p.periodo);
+    setTab("raw");
+    setChatMode("sql");
+  }, [shell.sqlDatosRawPayload, setChatMode]);
 
   const empresaSelector = (
     <div className="flex items-center gap-2 flex-wrap">
@@ -119,7 +138,13 @@ export function AdminView({ shell }: { shell: AppShellContext }) {
           />
         )}
         {tab === "adopcion" && <PanelAdopcion openChat={shell.openChat} />}
-        {tab === "raw" && <DatosRaw shell={shell} />}
+        {tab === "raw" && (
+          <DatosRaw
+            shell={shell}
+            sqlPayload={shell.sqlDatosRawPayload}
+            onSqlPayloadHandled={shell.clearSqlDatosRaw}
+          />
+        )}
       </div>
     </div>
   );

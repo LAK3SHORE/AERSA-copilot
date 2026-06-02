@@ -101,8 +101,14 @@ export function useAppChat(ctx: ChatContext) {
                     content: evt.explanation,
                   });
                 } else if (evt.type === "done") {
-                  if (evt.content) updateAssistant({ content: evt.content, pending: false });
-                  else updateAssistant({ pending: false });
+                  if (evt.content) {
+                    updateAssistant({
+                      content: evt.content,
+                      pending: false,
+                    });
+                  } else {
+                    updateAssistant({ pending: false });
+                  }
                 } else if (evt.type === "error") {
                   updateAssistant({ content: `⚠ ${evt.message}`, pending: false });
                 }

@@ -41,7 +41,11 @@ export function CorporativoDashboard({ data, onAsk }: Props) {
           <div className="mt-1.5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-widish text-ink-3 flex-wrap">
             <span>{o.active_auditors} auditores</span>
             <span className="text-ink-5">·</span>
-            <span>{o.avg_questions_per_session.toFixed(1)} preguntas/sesión</span>
+            <span>{o.total_chat_messages ?? 0} mensajes chat</span>
+            <span className="text-ink-5">·</span>
+            <span>
+              {(o.avg_mcp_calls_per_active_session ?? 0).toFixed(1)} MCP/sesión activa
+            </span>
           </div>
           <span className="absolute bottom-1.5 right-2.5 font-mono text-[10px] text-ink-4 opacity-0 group-hover:opacity-100 transition-opacity">
             preguntar →

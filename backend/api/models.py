@@ -119,6 +119,32 @@ class AuditBriefOut(BaseModel):
     actions: list[dict[str, Any]]
 
 
+class CategoryBreakdownRowOut(BaseModel):
+    categoria: str
+    total_merma_mxn: float
+    pct_del_total: float
+    num_productos: int
+
+
+class AlmacenBreakdownRowOut(BaseModel):
+    idalmacen: int
+    almacen: str
+    total_merma_mxn: float
+    pct_del_total: float
+    num_productos: int
+    num_lineas: int
+
+
+class ReportBundleOut(BaseModel):
+    idempresa: int
+    periodo: str
+    generated_at: str
+    brief: dict[str, Any]
+    category_breakdown: list[CategoryBreakdownRowOut]
+    almacen_breakdown: list[AlmacenBreakdownRowOut]
+    severity_counts: dict[str, int]
+
+
 class CierreReportOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -195,6 +221,9 @@ __all__ = [
     "CompanyOut",
     "KPISummaryOut",
     "AnomalyRecordOut",
+    "ReportBundleOut",
+    "CategoryBreakdownRowOut",
+    "AlmacenBreakdownRowOut",
     "CierreReportOut",
     "ChatHistoryMessage",
     "ChatRequest",

@@ -1,13 +1,13 @@
 """POST /api/query/nl2sql — corporativo NL→SQL chat (SSE, Session 15)."""
 from __future__ import annotations
 
-import json
 from collections.abc import AsyncIterator
 from typing import Any
 
 from fastapi import APIRouter, Depends, Request
 from sse_starlette.sse import EventSourceResponse
 
+from api.json_util import dumps_sse
 from api.models import Nl2SqlRequest
 from auth.dependencies import require_corporativo
 from auth.models import User
@@ -26,31 +26,27 @@ async def _sse_stream(body: Nl2SqlRequest) -> AsyncIterator[dict[str, Any]]:
         tabla=body.tabla,
     )
     if "error" in result:
-        yield {"data": json.dumps({"type": "error", "message": result.get("message", result["error"])})}
-        yield {"data": json.dumps({"type": "done", "content": ""})}
+        yield {"data": dumps_sse({"type": "error", "message": result.get("message", result["error"])})}
+        yield {"data": dumps_sse({"type": "done", "content": ""})}
         return
 
     explanation = result.get("explanation", "")
-    sql = result.get("sql", "")
-    content = (
-        f"<p>{explanation}</p>"
-        f'<pre style="background:rgba(132,172,55,0.05);padding:10px;font-size:10px;'
-        f'overflow-x:auto;margin:8px 0"><code>{sql}</code></pre>'
-        f"<p><strong>{result.get('row_count', 0)} filas devueltas</strong></p>"
-    )
+    row_count = int(result.get("row_count", 0))
     yield {
-        "data": json.dumps(
+        "data": dumps_sse(
             {
                 "type": "sql_result",
-                "sql": sql,
+                "sql": result.get("sql", ""),
                 "explanation": explanation,
                 "columns": result.get("columns", []),
                 "rows": result.get("rows", []),
-                "row_count": result.get("row_count", 0),
+                "row_count": row_count,
             }
         )
     }
-    yield {"data": json.dumps({"type": "done", "content": content})}
+    # Plain text only — UI renders sql_result (no HTML in chat markdown).
+    summary = f"{explanation}\n\n**{row_count}** filas devueltas."
+    yield {"data": dumps_sse({"type": "done", "content": summary})}
 
 
 @router.post("/nl2sql")

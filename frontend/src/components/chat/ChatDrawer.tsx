@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ChatMessage, ChatMode } from "../../lib/chatTypes";
+import type { ChatMessage, ChatMode, SqlResultPayload } from "../../lib/chatTypes";
 import { ChatMsg } from "./ChatMsg";
 import { ThinkingDots } from "./ThinkingDots";
 
@@ -13,6 +13,8 @@ interface Props {
   pending: boolean;
   onSend: (text: string) => void;
   ready: boolean;
+  onShowSqlInDatosRaw?: (result: SqlResultPayload) => void;
+  canShowSqlInDatosRaw?: boolean;
 }
 
 export function ChatDrawer({
@@ -25,6 +27,8 @@ export function ChatDrawer({
   pending,
   onSend,
   ready,
+  onShowSqlInDatosRaw,
+  canShowSqlInDatosRaw,
 }: Props) {
   const [input, setInput] = useState("");
   const msgsRef = useRef<HTMLDivElement>(null);
@@ -89,7 +93,13 @@ export function ChatDrawer({
           </div>
         )}
         {messages.map((m, i) => (
-          <ChatMsg key={i} msg={m} mode={mode} />
+          <ChatMsg
+            key={i}
+            msg={m}
+            mode={mode}
+            onShowSqlInDatosRaw={onShowSqlInDatosRaw}
+            canShowSqlInDatosRaw={canShowSqlInDatosRaw}
+          />
         ))}
         {pending && <ThinkingDots />}
       </div>

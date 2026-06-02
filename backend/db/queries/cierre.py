@@ -150,6 +150,31 @@ ORDER BY total_merma_mxn DESC
 """)
 
 
+_ALMACEN_SHRINKAGE_SQL = text("""
+SELECT
+    f.idalmacen,
+    a.almacen_nombre                                   AS almacen,
+    SUM(ABS(f.dif_importe))                            AS total_merma_mxn,
+    COUNT(DISTINCT f.idproducto)                       AS num_productos,
+    COUNT(*)                                           AS num_lineas
+FROM inventario_full f
+JOIN almacen a ON f.idalmacen = a.idalmacen
+WHERE f.idempresa = :idempresa
+  AND f.periodo   = :periodo
+  AND f.diferencia < 0
+GROUP BY f.idalmacen, a.almacen_nombre
+ORDER BY total_merma_mxn DESC
+""")
+
+
+def fetch_almacen_shrinkage(idempresa: int, periodo: str) -> pd.DataFrame:
+    return pd.read_sql(
+        _ALMACEN_SHRINKAGE_SQL,
+        engine,
+        params={"idempresa": idempresa, "periodo": periodo},
+    )
+
+
 def fetch_category_shrinkage(
     idempresa: int,
     periodo: str,

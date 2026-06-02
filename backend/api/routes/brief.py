@@ -24,6 +24,7 @@ def get_brief(
     idempresa: int = Path(ge=1),
     periodo: str = Path(min_length=7, max_length=7),
     session_id: int | None = Query(default=None),
+    top_n: int = Query(default=20, ge=1, le=100),
     user: User = Depends(get_current_user),
 ) -> dict:
     assert_empresa_access(user, idempresa)
@@ -31,7 +32,7 @@ def get_brief(
         raise HTTPException(status_code=400, detail="periodo must be YYYY-MM")
 
     try:
-        report = get_or_build_cierre_report(idempresa, periodo)
+        report = get_or_build_cierre_report(idempresa, periodo, top_n=top_n)
     except Exception as exc:  # noqa: BLE001
         log.exception("brief build failed")
         raise HTTPException(status_code=503, detail=f"engine_error: {exc}") from exc

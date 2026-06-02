@@ -17,7 +17,7 @@ export function ToolsSection({
           <div className="font-sans text-[13px] font-medium text-ink mb-1">
             El Copiloto responde la mayoría de las preguntas que surgen de estos datos
           </div>
-          <div className="font-sans text-xs text-ink-2 leading-relaxed">
+          <div className="font-sans text-xs text-ink leading-relaxed">
             Haz clic en una tarjeta para abrir el chat con un prompt sugerido.
           </div>
         </div>
@@ -25,17 +25,17 @@ export function ToolsSection({
       <div className="flex flex-col gap-1.5">
         {tools.map((tool) => (
           <button
-            key={tool.nombre}
+            key={tool.id}
             type="button"
-            onClick={() => openChat(tool.prompt)}
+            onClick={() => openChat(tool.prompt, "audit")}
             className="text-left border border-accent-2/25 border-l-[3px] border-l-accent-2 p-3 bg-white hover:bg-accent-2/10 cursor-pointer transition-colors"
           >
-            <div className="font-mono text-[11px] font-medium text-accent mb-0.5 tracking-wide">
-              {tool.nombre}
+            <div className="font-sans text-[12.5px] font-medium text-ink mb-0.5 leading-snug">
+              {tool.titulo}
             </div>
-            <div className="font-sans text-[11.5px] text-ink-2 mb-1.5 leading-snug">{tool.desc}</div>
-            <div className="font-mono text-[9.5px] text-ink-3 border-t border-ink/10 pt-1.5">
-              <span className="text-ink-4">ej: </span>
+            <div className="font-sans text-[11.5px] text-ink mb-1.5 leading-snug">{tool.desc}</div>
+            <div className="font-sans text-[10.5px] text-ink-2 border-t border-ink/10 pt-1.5 leading-snug">
+              <span className="text-ink-3 font-medium">ej: </span>
               {tool.ejemplo}
             </div>
           </button>

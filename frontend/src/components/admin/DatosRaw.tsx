@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { fetchCompanies } from "../../api/companies";
 import { fetchPeriods } from "../../api/periods";
-import { fetchRawCierre } from "../../api/raw";
+import { fetchAllRawCierre, fetchRawCierre } from "../../api/raw";
 import type { AppShellContext } from "../AppShell";
+import type { SqlDatosRawPayload } from "../../lib/chatTypes";
 import type { RawRow } from "../../types/raw";
 import type { Company } from "../../types";
+import { downloadCsv } from "../../lib/csvExport";
+import { rawRowMatchesSqlFilter } from "../../lib/sqlToRawFilter";
 import { Eyebrow } from "../shared/Eyebrow";
 
 function matchNum(val: number, expr: string): boolean {
@@ -37,7 +40,15 @@ const COLS = [
   { key: "z" as const, label: "Z-SCORE", type: "num" as const, align: "right" as const },
 ];
 
-export function DatosRaw({ shell }: { shell: AppShellContext }) {
+export function DatosRaw({
+  shell,
+  sqlPayload,
+  onSqlPayloadHandled,
+}: {
+  shell: AppShellContext;
+  sqlPayload?: SqlDatosRawPayload | null;
+  onSqlPayloadHandled?: () => void;
+}) {
   const [empresas, setEmpresas] = useState<Company[]>([]);
   const [empresa, setEmpresa] = useState("");
   const [cierre, setCierre] = useState("");
@@ -54,6 +65,7 @@ export function DatosRaw({ shell }: { shell: AppShellContext }) {
     });
     return m;
   });
+  const [sqlView, setSqlView] = useState<SqlDatosRawPayload | null>(null);
 
   useEffect(() => {
     fetchCompanies(20).then(setEmpresas).catch(() => {});
@@ -64,31 +76,65 @@ export function DatosRaw({ shell }: { shell: AppShellContext }) {
     fetchPeriods(Number(empresa)).then(setPeriods).catch(() => setPeriods([]));
   }, [empresa]);
 
-  const handleLoad = async () => {
-    if (!empresa || !cierre) return;
+  const loadRaw = async (
+    emp: string,
+    per: string,
+    openChatAfter: boolean,
+    fetchAll = false,
+  ) => {
     setLoading(true);
     try {
-      const res = await fetchRawCierre(Number(empresa), cierre, tabla);
+      const res = fetchAll
+        ? await fetchAllRawCierre(Number(emp), per, tabla)
+        : await fetchRawCierre(Number(emp), per, tabla);
       setRows(res.rows);
       setTotalRows(res.total_rows);
       setLoaded(true);
       shell.setSqlContext({
-        idempresa: Number(empresa),
-        periodo: cierre,
+        idempresa: Number(emp),
+        periodo: per,
         tabla,
       });
-      shell.openChat(
-        `¿Cuáles son los productos con más merma en Empresa ${empresa} período ${cierre}?`,
-        "sql",
-      );
+      if (openChatAfter) {
+        shell.openChat(
+          `¿Cuáles son los productos con más merma en Empresa ${emp} período ${per}?`,
+          "sql",
+        );
+      }
     } finally {
       setLoading(false);
     }
   };
 
+  const handleLoad = async () => {
+    if (!empresa || !cierre) return;
+    setSqlView(null);
+    await loadRaw(empresa, cierre, true);
+  };
+
+  useEffect(() => {
+    if (!sqlPayload) return;
+    const emp = String(sqlPayload.idempresa);
+    const per = sqlPayload.periodo;
+    setEmpresa(emp);
+    setCierre(per);
+    setSqlView(sqlPayload);
+    clearFilters();
+    void (async () => {
+      await loadRaw(emp, per, false, true);
+      onSqlPayloadHandled?.();
+    })();
+  }, [sqlPayload?.requestId]);
+
+  const sqlMatchedRows = useMemo(() => {
+    if (!loaded || !sqlView?.filter) return null;
+    return rows.filter((row) => rawRowMatchesSqlFilter(row, sqlView.filter!));
+  }, [loaded, rows, sqlView]);
+
   const filteredRows = useMemo(() => {
     if (!loaded) return [];
-    return rows.filter((row) => {
+    const base = sqlMatchedRows ?? rows;
+    return base.filter((row) => {
       for (const col of COLS) {
         const expr = colFilters[col.key];
         if (!expr) continue;
@@ -101,9 +147,32 @@ export function DatosRaw({ shell }: { shell: AppShellContext }) {
       }
       return true;
     });
-  }, [loaded, rows, colFilters]);
+  }, [loaded, rows, colFilters, sqlMatchedRows]);
 
   const hasFilters = Object.values(colFilters).some((v) => v !== "");
+  const csvHeaders = COLS.map((c) => c.label);
+
+  const downloadRows = (data: RawRow[], filtered: boolean) => {
+    const suffix = filtered && hasFilters ? "-filtrado" : "";
+    downloadCsv(
+      `datos-raw-${empresa}-${cierre}${suffix}.csv`,
+      csvHeaders,
+      data.map((row) => [
+        row.idalmacen,
+        row.almacen,
+        row.idprod,
+        row.producto,
+        row.cat,
+        row.sf,
+        row.st,
+        row.d,
+        row.mp,
+        row.mxn,
+        row.z,
+      ]),
+    );
+  };
+
   const clearFilters = () => {
     const m: Record<string, string> = {};
     COLS.forEach((c) => {
@@ -166,8 +235,15 @@ export function DatosRaw({ shell }: { shell: AppShellContext }) {
         </button>
         {loaded && (
           <span className="font-mono text-[9.5px] text-ink-4">
-            {tabla} · <strong className="text-ink">{filteredRows.length}</strong> / {totalRows}{" "}
-            filas
+            {tabla} · <strong className="text-ink">{filteredRows.length}</strong>
+            {sqlView?.filter && sqlMatchedRows != null ? (
+              <>
+                {" "}
+                / {sqlMatchedRows.length} filas SQL · {totalRows} cierre
+              </>
+            ) : (
+              <> / {totalRows} filas</>
+            )}
           </span>
         )}
         {hasFilters && (
@@ -179,7 +255,49 @@ export function DatosRaw({ shell }: { shell: AppShellContext }) {
             × limpiar filtros
           </button>
         )}
+        {loaded && (
+          <>
+            <button
+              type="button"
+              onClick={() => downloadRows(filteredRows, true)}
+              className="font-mono text-[9.5px] px-2 py-1 border border-accent-3 text-ink hover:bg-accent/10 cursor-pointer"
+            >
+              CSV {hasFilters ? "FILTRADO" : "VISIBLE"}
+            </button>
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={() => downloadRows(rows, false)}
+                className="font-mono text-[9.5px] px-2 py-1 border border-accent-3 text-ink-3 hover:bg-accent/10 cursor-pointer"
+              >
+                CSV COMPLETO
+              </button>
+            )}
+          </>
+        )}
       </div>
+
+      {sqlView && loaded && (
+        <div className="mx-7 mt-3 mb-1 px-3 py-2.5 border border-accent-2/40 border-l-[3px] border-l-accent-2 bg-white shrink-0">
+          <div className="font-mono text-[9px] tracking-widish text-accent-2 mb-1">
+            VISTA DESDE CONSULTA SQL
+          </div>
+          <p className="font-sans text-[11px] text-ink leading-snug mb-1">{sqlView.explanation}</p>
+          <p className="font-mono text-[10px] text-ink-3 mb-2">
+            {sqlView.sqlRowCount} filas en la consulta
+            {sqlView.filter && sqlMatchedRows != null
+              ? ` · ${sqlMatchedRows.length} líneas de detalle en Datos Raw`
+              : " · sin IDs/nombres para cruzar: mostrando cierre completo"}
+          </p>
+          <button
+            type="button"
+            onClick={() => setSqlView(null)}
+            className="font-mono text-[9px] px-2 py-0.5 border border-accent-3 hover:bg-accent/10 cursor-pointer"
+          >
+            × quitar filtro SQL
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 overflow-auto px-7 pb-4">
         {!loaded ? (
