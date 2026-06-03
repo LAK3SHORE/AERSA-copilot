@@ -382,10 +382,10 @@ priority_score = min(round((0.40*severity + 0.40*impact + 0.20*recurrence) * cat
 
 **Phase 2** (production-grade features). Phase 1 prototype (DB/engine/MCP/agent/API/UI) is complete; Phase 2 adds JWT auth, interaction logging, guided briefing, finding status, owner analytics, the corporativo panel, the report generator, and the NL→SQL / Datos Raw bridge.
 
-**Next:** Docker compose + production hardening.
+**Status:** ✅ Finished / delivered. Docker compose + production hardening were scoped as optional future work, not part of the delivered build.
 
 Full history, decisions, and per-session notes live in the knowledge vault under
-`wiki/projects/ongoing/aersa-copilot/` (`status.md`, `architecture.md`, `decisions/`, `entities/`, `sessions/`).
+`wiki/projects/completed/aersa-copilot/` (`status.md`, `architecture.md`, `decisions/`, `entities/`, `sessions/`).
 The in-repo runtime cheat sheet is [CLAUDE.md](CLAUDE.md).
 
 ---
