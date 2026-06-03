@@ -384,10 +384,6 @@ priority_score = min(round((0.40*severity + 0.40*impact + 0.20*recurrence) * cat
 
 **Status:** ✅ Finished / delivered. Docker compose + production hardening were scoped as optional future work, not part of the delivered build.
 
-Full history, decisions, and per-session notes live in the knowledge vault under
-`wiki/projects/completed/aersa-copilot/` (`status.md`, `architecture.md`, `decisions/`, `entities/`, `sessions/`).
-The in-repo runtime cheat sheet is [CLAUDE.md](CLAUDE.md).
-
 ---
 
 *Built for AERSA · Tec de Monterrey (MA3001B). Inventory data is confidential to AERSA and not included in this repository.*
