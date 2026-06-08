@@ -1,10 +1,9 @@
 """Pydantic request/response models for the FastAPI surface (CLAUDE.md 9).
 
 Field shapes mirror the engine dataclasses (`KPISummary`, `AnomalyRecord`,
-`CierreReport` in `engine/report.py`). Keep them in sync if the engine adds
-fields — Pydantic v2 is strict on unknown keys when a model is the
-response_model.
+`CierreReport` in `engine/report.py`). 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Literal
